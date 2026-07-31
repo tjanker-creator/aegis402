@@ -1,0 +1,227 @@
+<title>AEGIS402 — guards for x402 payments on Algorand</title>
+<style>
+  :root {
+    --ground: #FAF9F6;
+    --raised: #FFFFFF;
+    --ink: #0C1017;
+    --ink-soft: #4A5464;
+    --ink-faint: #8A93A1;
+    --rule: #E3E1DB;
+    --guard: #B77A17;
+    --guard-bg: #FBF3E3;
+    --ok: #1B7F52;
+    --stop: #B3402F;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0B0F15; --raised: #131922; --ink: #ECEFF4; --ink-soft: #A6B0BF;
+      --ink-faint: #6A7583; --rule: #212936; --guard: #E8A33D; --guard-bg: #1E1A10;
+      --ok: #4ADE80; --stop: #F87171;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0B0F15; --raised: #131922; --ink: #ECEFF4; --ink-soft: #A6B0BF;
+    --ink-faint: #6A7583; --rule: #212936; --guard: #E8A33D; --guard-bg: #1E1A10;
+    --ok: #4ADE80; --stop: #F87171;
+  }
+  :root[data-theme="light"] {
+    --ground: #FAF9F6; --raised: #FFFFFF; --ink: #0C1017; --ink-soft: #4A5464;
+    --ink-faint: #8A93A1; --rule: #E3E1DB; --guard: #B77A17; --guard-bg: #FBF3E3;
+    --ok: #1B7F52; --stop: #B3402F;
+  }
+
+  body { background: var(--ground); color: var(--ink); font-family: var(--sans);
+         line-height: 1.55; margin: 0; }
+  .deck { max-width: 60rem; margin: 0 auto; padding: 0 1.75rem; }
+
+  section { padding: 4.5rem 0; border-bottom: 1px solid var(--rule); }
+  section:last-child { border-bottom: 0; }
+
+  .eyebrow { font-family: var(--mono); font-size: .72rem; letter-spacing: .14em;
+             text-transform: uppercase; color: var(--ink-faint); margin: 0 0 1.1rem; }
+  h1 { font-size: clamp(2.1rem, 5.2vw, 3.4rem); line-height: 1.06; letter-spacing: -.024em;
+       margin: 0 0 1.2rem; text-wrap: balance; font-weight: 620; }
+  h2 { font-size: clamp(1.5rem, 3.2vw, 2.1rem); line-height: 1.15; letter-spacing: -.018em;
+       margin: 0 0 1.1rem; text-wrap: balance; font-weight: 600; }
+  p { margin: 0 0 1rem; max-width: 62ch; color: var(--ink-soft); }
+  p.lead { font-size: 1.16rem; color: var(--ink); max-width: 58ch; }
+  strong { color: var(--ink); font-weight: 600; }
+
+  .stack { display: flex; flex-direction: column; gap: 1rem; }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1.6rem; }
+
+  .group { font-family: var(--mono); font-size: .82rem; background: var(--raised);
+           border: 1px solid var(--rule); border-radius: 3px; overflow-x: auto; }
+  .group .row { display: grid; grid-template-columns: 2.4rem 11rem 1fr;
+                gap: .9rem; padding: .62rem .9rem; border-bottom: 1px solid var(--rule);
+                white-space: nowrap; }
+  .group .row:last-child { border-bottom: 0; }
+  .group .idx { color: var(--ink-faint); }
+  .group .who { color: var(--ink); }
+  .group .note { color: var(--ink-soft); }
+  .group .row.guard { background: var(--guard-bg); }
+  .group .row.guard .who { color: var(--guard); font-weight: 600; }
+
+  .verdict { font-family: var(--mono); font-size: .8rem; padding: .8rem .9rem;
+             border-left: 2px solid var(--rule); color: var(--ink-soft);
+             overflow-x: auto; }
+  .verdict.ok { border-left-color: var(--ok); }
+  .verdict.stop { border-left-color: var(--stop); }
+  .verdict b { color: var(--ink); font-weight: 600; }
+  .tx { font-family: var(--mono); font-size: .72rem; color: var(--ink-faint);
+        word-break: break-all; }
+
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+  th, td { text-align: left; padding: .5rem .7rem; border-bottom: 1px solid var(--rule); }
+  th { font-family: var(--mono); font-size: .7rem; letter-spacing: .1em;
+       text-transform: uppercase; color: var(--ink-faint); font-weight: 500; }
+  td.state { font-family: var(--mono); font-size: .78rem; white-space: nowrap; }
+  .blocked { color: var(--ok); } .settled { color: var(--ink-soft); }
+
+  .quote { border-left: 2px solid var(--guard); padding: .2rem 0 .2rem 1.1rem;
+           color: var(--ink); font-size: 1.02rem; max-width: 56ch; }
+  ul { padding-left: 1.1rem; margin: 0 0 1rem; max-width: 62ch; color: var(--ink-soft); }
+  li { margin-bottom: .45rem; }
+  li::marker { color: var(--ink-faint); }
+  .foot { font-family: var(--mono); font-size: .74rem; color: var(--ink-faint);
+          padding: 2rem 0 3rem; }
+  a { color: var(--guard); }
+</style>
+
+<div class="deck">
+
+<section>
+  <p class="eyebrow">Algorand x402 Hackathon · July 2026</p>
+  <h1>The model can be fooled.<br>The money can't move.</h1>
+  <p class="lead">AEGIS402 puts the spending policy inside the Algorand payment
+  group itself. A compromised agent can decide to overspend — the transfer
+  still cannot come into existence.</p>
+  <div class="verdict stop" style="margin-top:2rem">
+    agent  &nbsp;<b>pays 0.02 USDC to EQFRW7U5…IBGU6Y</b><br>
+    chain  &nbsp;<span style="color:var(--ok)">transaction rejected by ApprovalProgram</span><br>
+    moved  &nbsp;<b>0 microUSDC</b>
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">The problem</p>
+  <h2>An agent's reasoning layer is also its authorization layer</h2>
+  <p>Give an agent a wallet and the thing that decides is the thing that signs.
+  Every spending limit that lives in the agent's own process lives inside the
+  blast radius: whoever controls the agent controls the limit.</p>
+  <p>The obvious fix — a smarter model — does not hold. We tested it. Frontier
+  models refused our injection outright:</p>
+  <p class="quote">“I won't comply with that ‘priority override’ — it's an
+  embedded instruction in page content attempting to redirect funds to an
+  unverified address.”</p>
+  <p>Good. And irrelevant, because <strong>the attack that works needs no
+  jailbreak at all.</strong></p>
+</section>
+
+<section>
+  <p class="eyebrow">What actually breaks</p>
+  <h2>A poisoned supplier beats a perfect model</h2>
+  <p>In x402 the receiving address is declared by the <em>server</em> in its 402
+  response. An agent has no independent ground truth about who it is paying. So
+  we showed a real Claude agent an ordinary, professional supplier page with an
+  attacker's address on it. No manipulation, no override language.</p>
+  <div class="verdict stop">
+    agent &nbsp;“Payment for one real-time market data query from MarketFeed API”<br>
+    <span class="tx">to EQFRW7U57YY5N5ZMVN45PYFE6OPG7SATWZEJ5DCZO2WQLBGRSS7KIBGU6Y · 0.02 USDC</span>
+  </div>
+  <p style="margin-top:1.2rem"><strong>The model did nothing wrong.</strong> It
+  was asked to buy data, it bought data, it paid the published address. There is
+  no unethical instruction to refuse. The data was poisoned, not the intent —
+  and alignment has nothing to object to.</p>
+</section>
+
+<section>
+  <p class="eyebrow">The mechanism</p>
+  <h2>One atomic group, one fate</h2>
+  <p>A guard application call rides in the same Algorand group as the USDC
+  transfer. If the guard rejects, <code>simulate</code> fails, the facilitator
+  never submits, and the payment does not exist. The facilitator is
+  <strong>unmodified</strong>, and because its fee transaction pools the fee for
+  the whole group, the guard costs the paying agent nothing.</p>
+  <div class="group">
+    <div class="row"><span class="idx">[0]</span><span class="who">fee-payer</span><span class="note">unsigned → facilitator signs at settle</span></div>
+    <div class="row guard"><span class="idx">[1]</span><span class="who">guard app-call</span><span class="note">immutable policy: cap + receiver allowlist</span></div>
+    <div class="row"><span class="idx">[2]</span><span class="who">payment axfer</span><span class="note">signed by the vault, not by the agent</span></div>
+  </div>
+  <p style="margin-top:1.3rem">The obvious question is whether the agent can just
+  leave the guard out. It cannot. The account is <strong>rekeyed to a
+  LogicSig</strong> that signs a transfer only when a call to <em>that</em> guard,
+  naming <em>that</em> transaction's index, is present. Omitting it fails.
+  Substituting a friendlier guard fails. The agent's operational key signs the
+  guard call and holds no money at all.</p>
+</section>
+
+<section>
+  <p class="eyebrow">The proof · Algorand TestNet · live hosted facilitator</p>
+  <h2>Eight attacks, seven refusals, nothing unexpected</h2>
+  <div class="verdict ok" style="margin-bottom:1.4rem">
+    <b>policy-compliant payment settles</b><br>
+    <span class="tx">QDARLDWMI7UYWV25MIKMYZFJV3IBCAK23KYYHV3WIQIBQ4LUONPQ · −10000 microUSDC</span>
+  </div>
+  <table>
+    <tr><th>Scenario</th><th>Result</th><th>Refused by</th></tr>
+    <tr><td>Pay 10× the cap</td><td class="state blocked">blocked</td><td>guard app</td></tr>
+    <tr><td>Redirect to the attacker</td><td class="state blocked">blocked</td><td>guard app</td></tr>
+    <tr><td>Guard that rejects kills the group</td><td class="state blocked">blocked</td><td>group atomicity</td></tr>
+    <tr><td>Rekey smuggled into the group</td><td class="state blocked">blocked</td><td>facilitator</td></tr>
+    <tr><td>Close-out smuggled into the group</td><td class="state blocked">blocked</td><td>facilitator</td></tr>
+    <tr><td>Omit the guard entirely</td><td class="state blocked">blocked</td><td>vault LogicSig</td></tr>
+    <tr><td>Substitute your own permissive guard</td><td class="state blocked">blocked</td><td>vault LogicSig</td></tr>
+  </table>
+  <p style="margin-top:1.3rem">Verifiable without trusting us: the agent
+  account's <code>auth-addr</code> is public, and recompiling the published
+  LogicSig reproduces exactly that address — so no second key exists anywhere.
+  <code>npm run attack</code> re-runs all of it against the live facilitator.</p>
+</section>
+
+<section>
+  <p class="eyebrow">Honesty</p>
+  <h2>What we do not protect against</h2>
+  <p>The harness is built to print red rows, and the repository ships a file
+  listing its own bypasses. The important ones:</p>
+  <ul>
+    <li><strong>The ledger gates the payment, not the action.</strong> An agent
+      that abandons the protocol can still do unpaid damage. We never claim
+      “no verification → no action” as a ledger property.</li>
+    <li><strong>Two of the seven refusals are the facilitator's</strong>, not
+      ours. We inherit them and say so.</li>
+    <li><strong>We are not claiming the primitive.</strong> Guarding a transfer
+      with a grouped app call is long-standing Algorand practice, the x402 AVM
+      scheme explicitly permits extra transactions, and prior work — KirkeLabs'
+      oaa-agent-kit, agent-budget, Akita's ARC-58 plugins — enforces the same
+      intent by other means. Ours travels <em>inside the payment group</em>, on
+      an ordinary account holding ordinary USDC, against an unmodified
+      facilitator.</li>
+    <li><strong>Not audited. TestNet only.</strong></li>
+  </ul>
+</section>
+
+<section>
+  <p class="eyebrow">What's next</p>
+  <h2>Guards, not a product</h2>
+  <p>The guard slot is an interface, not a feature. A payment group holds up to
+  sixteen transactions and the facilitator pays for them, so a payment can carry
+  several independent guards from different authors — a spending cap, a velocity
+  limit, a terms commitment, an audit receipt — all settling or failing
+  together.</p>
+  <p>Next: publish the guard interface as an ARC so guards compose across
+  wallets and clients; a public vault on MainNet holding real USDC that anyone
+  is invited to drain; and hardening for other agents' wallets rather than only
+  our own.</p>
+  <p>One open question for the facilitator's operators is in
+  <code>SPEC-NOTE.md</code>: the fee pool covers guard transactions the
+  facilitator never asked for. We think that subsidy is a feature — it makes
+  security free for the payer — but it should be a deliberate one.</p>
+</section>
+
+<p class="foot">AEGIS402 · Algorand TestNet · guard app 768360225 · vault
+BENS63EQYQ4T6IJPAOAJSXXHEYV72W6OWFHGPFPQTRJ7HQXDOD32OLULGM</p>
+
+</div>
