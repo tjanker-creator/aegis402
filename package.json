@@ -11,7 +11,8 @@
     "attack": "node scripts/attack.mjs",
     "server": "node src/server.mjs",
     "demo": "node scripts/demo.mjs",
-    "jailbreak": "node scripts/jailbreak.mjs"
+    "jailbreak": "node scripts/jailbreak.mjs",
+    "film": "node scripts/film.mjs"
   },
   "keywords": [],
   "author": "",
