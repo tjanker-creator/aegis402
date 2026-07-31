@@ -1,0 +1,68 @@
+#pragma version 10
+// ============================================================================
+// AEGIS402 — DEADBOLT policy app (IMMUTABLE)
+//
+// Rides as a client-signed application call inside the SAME atomic x402
+// payment group. If any assertion fails, the group fails in algod simulate,
+// the facilitator aborts before submission, and ZERO funds move.
+//
+// App arg 0 : uint64 index of the payment transaction within the group
+// Enforces  : payment is an ASA transfer
+//             amount <= CAP_MICRO
+//             receiver == ALLOWED_RECEIVER   (merchant allowlist)
+//
+// Immutability: only NoOp calls are accepted. UpdateApplication and
+// DeleteApplication are rejected, so the policy that guards the money can
+// never be relaxed after deployment — the reason we can call this
+// enforcement rather than a promise.
+// ============================================================================
+
+// --- allow creation -----------------------------------------------------
+txn ApplicationID
+int 0
+==
+bnz allow
+
+// --- reject update/delete: this policy is immutable ---------------------
+txn OnCompletion
+int NoOp
+==
+bz reject
+
+// --- read the payment index from app arg 0 ------------------------------
+txn NumAppArgs
+int 1
+==
+bz reject
+txna ApplicationArgs 0
+btoi
+store 0
+
+// --- the guarded transaction must be an asset transfer ------------------
+load 0
+gtxns TypeEnum
+int axfer
+==
+bz reject
+
+// --- CAP: amount must not exceed the per-transaction limit --------------
+load 0
+gtxns AssetAmount
+int CAP_MICRO
+<=
+bz reject
+
+// --- ALLOWLIST: receiver must be the approved merchant ------------------
+load 0
+gtxns AssetReceiver
+addr ALLOWED_RECEIVER
+==
+bz reject
+
+allow:
+int 1
+return
+
+reject:
+int 0
+return

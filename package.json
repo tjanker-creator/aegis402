@@ -1,0 +1,28 @@
+{
+  "name": "aegis402",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "status": "node scripts/status.mjs",
+    "optin": "node scripts/optin.mjs",
+    "deploy": "node scripts/deploy.mjs",
+    "attack": "node scripts/attack.mjs",
+    "server": "node src/server.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@hono/node-server": "^2.0.12",
+    "@x402/avm": "^2.20.0",
+    "@x402/core": "^2.20.0",
+    "@x402/fetch": "^2.20.0",
+    "@x402/hono": "^2.20.0",
+    "algosdk": "^3.6.0",
+    "dotenv": "^17.4.2",
+    "hono": "^4.12.33"
+  }
+}
