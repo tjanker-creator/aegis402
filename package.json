@@ -12,7 +12,8 @@
     "server": "node src/server.mjs",
     "demo": "node scripts/demo.mjs",
     "jailbreak": "node scripts/jailbreak.mjs",
-    "film": "node scripts/film.mjs"
+    "film": "node scripts/film.mjs",
+    "verify": "node scripts/verify.mjs"
   },
   "keywords": [],
   "author": "",
