@@ -1,56 +1,80 @@
 # Proof
 
 Recorded 2026-07-31 on **Algorand TestNet**, settled through the **live hosted
-GoPlausible facilitator** at `https://facilitator.goplausible.xyz` — not a local
-mock, not a modified facilitator.
+GoPlausible facilitator** at `https://facilitator.goplausible.xyz` — an
+unmodified third-party service, not a local mock.
 
-* Policy app: [`768360225`](https://lora.algokit.io/testnet/application/768360225) — immutable (update and delete calls are rejected)
-* Policy: per-transaction cap **50000 microUSDC**, allowlisted receiver `GABQRET4USJ5PJM2EUV7PV6L64O7AP3E2XLS3HMUXFIMPMQLDFTFAMDWOM`
-* Asset: real testnet **USDC**, ASA `10458941`
-* Agent (payer): `DORZEEZDH73RWH7ETRTVBMDECSA7JT5ZU6IFAFTOFHTSB3O33F3WCWXOXI`
+| | |
+|---|---|
+| Agent account (vault) | [`DORZEEZDH73RWH7ETRTVBMDECSA7JT5ZU6IFAFTOFHTSB3O33F3WCWXOXI`](https://lora.algokit.io/testnet/account/DORZEEZDH73RWH7ETRTVBMDECSA7JT5ZU6IFAFTOFHTSB3O33F3WCWXOXI) |
+| Rekeyed to vault LogicSig | `BENS63EQYQ4T6IJPAOAJSXXHEYV72W6OWFHGPFPQTRJ7HQXDOD32OLULGM` |
+| Guard app (immutable) | [`768360225`](https://lora.algokit.io/testnet/application/768360225) |
+| Policy | max 50000 microUSDC per payment, receiver must be `GABQRET4…AMDWOM` |
+| Asset | real testnet USDC, ASA `10458941` |
 
-Reproduce with `npm run attack`.
+Reproduce: `npm run attack`
+
+## Independent verification, without trusting this repository
+
+The agent account's spending authority is public. Anyone can confirm that its
+own key can no longer move its money:
+
+```bash
+curl -s https://testnet-api.algonode.cloud/v2/accounts/DORZEEZDH73RWH7ETRTVBMDECSA7JT5ZU6IFAFTOFHTSB3O33F3WCWXOXI \
+  | jq -r '.["auth-addr"]'
+# BENS63EQYQ4T6IJPAOAJSXXHEYV72W6OWFHGPFPQTRJ7HQXDOD32OLULGM
+```
+
+Recompile `contracts/vault.teal.tmpl` with `GUARD_APP_ID = 768360225` and the
+resulting program hash equals that address — so the account is governed by
+exactly the published logic, with no second key hidden anywhere.
 
 ## The proof pair
 
-**A payment that satisfies the policy settles.**
+**A policy-compliant payment settles.**
 
 > `honest-payment` — 0.01 USDC to the allowlisted merchant, inside the cap.
-> Settled: [`256SCA6TQLIWGL2MLN555X6XVZ6C5ZQBGZNICYWCTBWHIVELCEUA`](https://lora.algokit.io/testnet/transaction/256SCA6TQLIWGL2MLN555X6XVZ6C5ZQBGZNICYWCTBWHIVELCEUA)
+> Settled: [`QDARLDWMI7UYWV25MIKMYZFJV3IBCAK23KYYHV3WIQIBQ4LUONPQ`](https://lora.algokit.io/testnet/transaction/QDARLDWMI7UYWV25MIKMYZFJV3IBCAK23KYYHV3WIQIBQ4LUONPQ)
 > Agent balance delta: **−10000 microUSDC**.
 
-**The same payment, over the policy cap, cannot exist.**
+**The same payment over the policy cap cannot exist.**
 
 > `jailbreak-overspend` — the agent tries to pay 10× the cap.
-> Facilitator response, verbatim:
-> `Transaction simulation failed: transaction P4QQ4SBG5XQ4U3OTIZVQ4ZJKOF3MJAGK4YMJZ5ETVSRW74ZTQKZA: transaction rejected by ApprovalProgram`
-> Agent balance delta: **0**. There is no transaction id, because there is no transaction.
+> Facilitator response: `transaction rejected by ApprovalProgram`
+> Agent balance delta: **0**. No transaction id, because no transaction exists.
 
-That asymmetry is the entire product: the difference between the two runs is a
-single client-signed application call riding in the same atomic group.
+## Full battery — 8 scenarios, 8 as expected
 
-## Full battery
+| Scenario | What is attacked | Result | Enforced by |
+|---|---|---|---|
+| `honest-payment` | — | **settled** | — |
+| `jailbreak-overspend` | pay 10× the cap | **blocked** | guard app |
+| `jailbreak-redirect` | pay the attacker | **blocked** | guard app |
+| `guard-mutant` | guard that rejects must kill the group | **blocked** | group atomicity |
+| `rekey-smuggle` | rekey hidden in the payment group | **blocked** | facilitator |
+| `closeout-sweep` | asset close-out hidden in the group | **blocked** | facilitator |
+| `guard-omitted` | build the group without any guard | **blocked** | vault LogicSig |
+| `guard-substituted` | swap in a permissive guard of your own | **blocked** | vault LogicSig |
 
-| Scenario | Expected | Result | Funds | Evidence |
-|---|---|---|---|---|
-| `honest-payment` | settle | **settled** | −10000 | txId `256SCA6TQLIWGL2MLN555X6XVZ6C5ZQBGZNICYWCTBWHIVELCEUA` |
-| `jailbreak-overspend` | block | **blocked** | unchanged | `rejected by ApprovalProgram` |
-| `jailbreak-redirect` | block | **blocked** | unchanged | `rejected by ApprovalProgram` |
-| `guard-mutant` | block | **blocked** | unchanged | `rejected by ApprovalProgram` |
-| `rekey-smuggle` | block | **blocked** | unchanged | `Rekey transactions are not allowed: Transaction at index 2 has rekeyTo set` |
-| `closeout-sweep` | block | **blocked** | unchanged | `Close-to transactions are not allowed: Transaction at index 2 has AssetCloseTo set` |
-| `guard-omitted` | **settle (RED)** | **settled** | −500000 | txId `EZ623R3IYFRYV5EIVH3THKHYDHWIAELWUCPCIIIN5UN4RQPHET6Q` |
+**7 attacks blocked on-chain · 0 unexpected results.**
 
-**5 attacks blocked on-chain · 1 deliberately not blocked · 0 unexpected.**
+Verbatim chain responses, in order: `transaction rejected by ApprovalProgram`,
+`transaction rejected by ApprovalProgram`, `rejected by logic err=assert failed
+pc=98`, `Rekey transactions are not allowed: Transaction at index 2 has rekeyTo
+set`, `Close-to transactions are not allowed: Transaction at index 2 has
+AssetCloseTo set`, `rejected by logic err=assert failed pc=98`, `rejected by
+logic err=assert failed pc=98`.
 
-## About the red row
+## Who blocks what — and what we did not build
 
-`guard-omitted` succeeds, on purpose, and we publish it. An agent that holds its
-own signing key can build a plain `[fee-payer, payment]` group and skip the
-policy call — so at this stage AEGIS402 is opt-in enforcement. The last two rows
-are also worth noting for a different reason: `rekey-smuggle` and
-`closeout-sweep` are blocked by the *facilitator's own* security constraints,
-not by us. We inherit them, and we say so.
+Two of the eight rows are blocked by the **facilitator's own** security
+constraints, not by us. We inherit them and say so.
 
-See [KNOWN_BYPASSES.md](KNOWN_BYPASSES.md) for the full list of what this does
-not protect against, and the vault design that closes the `guard-omitted` hole.
+The last two rows are the ones that matter for the obvious question — *can the
+agent simply skip the guard?* It cannot: the account is rekeyed to a LogicSig
+that refuses to authorise a transfer unless a call to **that specific** guard
+application, naming **that specific** transaction index, is present in the same
+group. Omitting it fails. Substituting a friendlier guard fails.
+
+What we still do not protect against is in
+[KNOWN_BYPASSES.md](KNOWN_BYPASSES.md). It is a short list, and it is honest.

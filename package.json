@@ -9,13 +9,16 @@
     "optin": "node scripts/optin.mjs",
     "deploy": "node scripts/deploy.mjs",
     "attack": "node scripts/attack.mjs",
-    "server": "node src/server.mjs"
+    "server": "node src/server.mjs",
+    "demo": "node scripts/demo.mjs",
+    "jailbreak": "node scripts/jailbreak.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
     "@hono/node-server": "^2.0.12",
     "@x402/avm": "^2.20.0",
     "@x402/core": "^2.20.0",

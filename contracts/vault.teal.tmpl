@@ -1,0 +1,99 @@
+#pragma version 10
+// ============================================================================
+// AEGIS402 — VAULT LogicSig  (IMMUTABLE, template-compiled per vault)
+//
+// The agent's account is rekeyed ONCE to this logic signature. Afterwards the
+// account can only spend when this program approves, and this program approves
+// an outgoing asset transfer ONLY IF a call to the bound guard application
+// appears in the SAME atomic group.
+//
+// That is what turns the guard from advisory into unskippable: a jailbroken
+// agent cannot "just leave the guard out", because without the guard call the
+// logic signature refuses to authorise the transfer at all. The guard app
+// itself then decides whether the payment is within policy.
+//
+// Compiled with:
+//   GUARD_APP_ID  the application id whose call must be present
+//
+// Deliberately minimal. It checks presence and binding; it does not evaluate
+// policy. Policy lives in the guard app, which can evolve without ever
+// re-keying the vault.
+// ============================================================================
+
+// --- the transaction we are signing must be an asset transfer ---------------
+txn TypeEnum
+int axfer
+==
+assert
+
+// --- never allow the account to be re-keyed or emptied by us ---------------
+txn RekeyTo
+global ZeroAddress
+==
+assert
+txn AssetCloseTo
+global ZeroAddress
+==
+assert
+txn CloseRemainderTo
+global ZeroAddress
+==
+assert
+
+// --- fees are paid by the facilitator's pooled fee transaction --------------
+txn Fee
+int 0
+==
+assert
+
+// --- a call to the bound guard app must exist in this group -----------------
+// Scan every position in the group for an ApplicationCall to GUARD_APP_ID
+// whose first argument names THIS transaction's index, so the guard cannot be
+// satisfied by pointing at some other, harmless transfer.
+int 0
+store 0          // loop counter
+int 0
+store 1          // found flag
+
+loop:
+  load 0
+  global GroupSize
+  <
+  bz done
+
+  load 0
+  gtxns TypeEnum
+  int appl
+  ==
+  bz next
+
+  load 0
+  gtxns ApplicationID
+  int GUARD_APP_ID
+  ==
+  bz next
+
+  // the guard must reference this transaction's own group index
+  load 0
+  gtxnsa ApplicationArgs 0
+  btoi
+  txn GroupIndex
+  ==
+  bz next
+
+  int 1
+  store 1
+
+next:
+  load 0
+  int 1
+  +
+  store 0
+  b loop
+
+done:
+  load 1
+  assert
+
+int 1
+return

@@ -1,60 +1,65 @@
 # Known bypasses
 
-A security claim you cannot falsify is not a security claim. This file lists
-what AEGIS402 does **not** protect against. It is part of the submission on
-purpose, and `npm run attack` prints these as RED rows next to the green ones.
+A security claim you cannot falsify is not a security claim. This is what
+AEGIS402 does **not** protect against.
 
 ## 1. The ledger gates the payment, not the action
 
-AEGIS402 makes it impossible for a guarded payment to settle against policy.
-It does **not** make it impossible for a compromised agent to act.
+AEGIS402 makes it impossible for a guarded payment to settle against policy. It
+does **not** make it impossible for a compromised agent to act.
 
-An agent that has abandoned the protocol entirely can still run
-`npm install <malicious-package>` or exfiltrate data without paying anyone.
-Nothing on a blockchain can stop an off-chain action by an actor who never
-asks the chain for permission.
+An agent that abandons the protocol entirely can still run
+`npm install <malicious-package>`, leak data, or call an unpaid API. Nothing on
+a blockchain stops an off-chain action by an actor who never asks the chain for
+permission.
 
-* **What is a ledger property:** guarded funds cannot move against policy.
-* **What is a client property:** an honest agent gates its action on a settled
-  payment, so a blocked payment means the action does not happen.
+* **Ledger property:** vault funds cannot move against policy.
+* **Client property:** an honest agent gates its action on a settled payment, so
+  a blocked payment means the action does not happen.
 
-We state this in that order, deliberately. Claiming "no verification → no
-action" as a ledger guarantee would be false.
+We state it in that order deliberately. "No verification → no action" as a
+ledger guarantee would be false.
 
-## 2. An agent holding its own key can omit the guard
+## 2. Policy correctness is the operator's responsibility
 
-In the current build the policy app-call is added by the AEGIS client. An agent
-that controls its own signing key can simply build a plain
-`[fee-payer, payment]` group and skip the guard entirely. The harness proves
-this: scenario `guard-omitted` **settles**, and we print it in red.
+The guard enforces exactly what it was deployed with. A cap set too high, or an
+allowlisted address you did not vet, is enforced faithfully and uselessly. The
+guard app is immutable — update and delete calls are rejected — which removes
+"someone quietly relaxed the rule" as a risk, and equally means a wrong policy
+must be replaced rather than patched.
 
-The fix is designed and is the next milestone: the funds live in a vault
-account whose signing authority is rekeyed to an immutable LogicSig that
-refuses to sign an outgoing transfer unless the bound policy app-call is
-present in the same group. Then omission stops being possible rather than
-being discouraged. Until that ships, treat Deadbolt as *opt-in* enforcement:
-it protects an agent that wants to be protected, and any funds you route
-through it.
+## 3. Migration is a manual step, and rekeying is one-way in practice
 
-## 3. Policy correctness is your responsibility
-
-The policy app enforces exactly what it was deployed with — a per-transaction
-cap and an allowlisted receiver. A cap set too high, or an allowlist
-containing an address you did not vet, is enforced faithfully and uselessly.
-The policy is immutable after deployment (update and delete calls are
-rejected), which removes the "someone quietly relaxed the rule" risk but also
-means a wrong policy must be replaced, not patched.
+Protection starts when funds live in an account rekeyed to the vault LogicSig.
+Funds anywhere else are unguarded. And because the vault deliberately refuses to
+sign any transaction with `RekeyTo` set, an account rekeyed to a given vault
+cannot later be moved to a different vault: to change policy shape you move the
+funds out through a compliant payment and into a new vault. That is a real
+usability cost of making the guarantee hard, and we prefer it to a vault with an
+escape hatch.
 
 ## 4. We inherit the facilitator's trust boundary
 
 Settlement runs through the hosted GoPlausible facilitator. It cannot redirect
 funds — the payer's signature fixes amount, asset and receiver — but it can
-refuse to settle, and it decides when to submit. Liveness depends on it. A
-self-hosted facilitator removes that dependency and is supported by the same
-code path.
+refuse to settle, and it chooses when to submit. Liveness depends on it. Running
+your own facilitator removes that dependency and uses the same code path.
 
-## 5. Not yet audited, not yet on mainnet
+Related: our evidence shows that *this* facilitator accepts a client-signed
+guard call in the payment group. It does not prove that every facilitator must.
+The x402 SVM specification explicitly advises sponsors to allowlist which
+programs may reach the simulation path, so a hardened facilitator could
+legitimately refuse guards.
+
+## 5. Not audited, not on mainnet
 
 The TEAL is small and deliberately boring, but it has had no external review.
-Everything in this repository runs on Algorand TestNet with test funds. Do not
-put real money behind it in its current state.
+Everything here runs on TestNet with test funds. Do not put real money behind it
+in this state.
+
+## 6. Operator key compromise degrades to policy
+
+If the operational key leaks, the attacker can request guard approval — that is
+all. They cannot exceed the cap, pay a non-allowlisted address, omit the guard,
+or substitute a friendlier one. The blast radius of a stolen agent key becomes
+"can spend within policy", which is the point, but it is not nothing.

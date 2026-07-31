@@ -42,11 +42,15 @@ export async function buildGuardedGroup({ amount, receiver, guardAppId, rekeyTo,
     suggestedParams: feeParams,
   }));
 
+  // The guard call is signed by the OPERATOR key (which holds no funds), not by
+  // the vault — the vault's whole job is to refuse to sign anything except a
+  // transfer accompanied by such a call.
+  const operator = process.env.OPERATOR_MNEMONIC ? account("OPERATOR") : agent;
   if (guarded) {
     const idx = new Uint8Array(8);
     new DataView(idx.buffer).setBigUint64(0, BigInt(paymentIndex));
     txns.push(algosdk.makeApplicationNoOpTxnFromObject({
-      sender: agent.addr, appIndex: Number(guardAppId), appArgs: [idx],
+      sender: operator.addr, appIndex: Number(guardAppId), appArgs: [idx],
       suggestedParams: zeroFee,
     }));
   }
@@ -61,16 +65,43 @@ export async function buildGuardedGroup({ amount, receiver, guardAppId, rekeyTo,
 
   algosdk.assignGroupID(txns);
 
-  // The fee-payer txn stays UNSIGNED — the facilitator signs it at settle time.
-  const group = txns.map((t, i) =>
-    i === 0 ? b64(algosdk.encodeUnsignedTransaction(t)) : b64(t.signTxn(agent.sk))
-  );
+  // If the agent account has been rekeyed to the vault LogicSig, the agent's
+  // own key can no longer authorise a transfer — the LogicSig signs it, and it
+  // only does so when the bound guard call is present in this very group.
+  const vaultB64 = process.env.VAULT_LSIG_B64;
+  const vault = vaultB64
+    ? new algosdk.LogicSigAccount(Buffer.from(vaultB64, "base64"))
+    : null;
+
+  const group = txns.map((t, i) => {
+    if (i === 0) return b64(algosdk.encodeUnsignedTransaction(t)); // facilitator signs
+    if (i === paymentIndex) {
+      return vault
+        ? b64(algosdk.signLogicSigTransactionObject(t, vault).blob) // vault authorises
+        : b64(t.signTxn(agent.sk));
+    }
+    return b64(t.signTxn(operator.sk)); // guard call: operational key
+  });
 
   return {
     paymentPayload: payload(group, paymentIndex),
     paymentRequirements: requirements({ amount: String(amount), payTo: receiver, feePayer }),
     groupSize: size,
   };
+}
+
+/**
+ * The facilitator relays algod's raw rejection, which can carry a full
+ * transaction dump. Keep the part that says WHY.
+ */
+export function condense(reason = "") {
+  const m =
+    reason.match(/rejected by logic err=[^.]*/) ??
+    reason.match(/transaction rejected by ApprovalProgram/) ??
+    reason.match(/(Rekey|Close-to) transactions are not allowed[^:]*: [^\n]*/) ??
+    reason.match(/should have been authorized by \S+/);
+  if (m) return m[0].trim();
+  return reason.length > 200 ? reason.slice(0, 200) + "…" : reason;
 }
 
 /** Runs the full x402 handshake against the hosted facilitator. */

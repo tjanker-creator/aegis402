@@ -9,7 +9,7 @@
 // Rows marked RED are attacks we do NOT block. They are printed on purpose:
 // a security claim you cannot falsify is not a security claim.
 import { account, usdcBalance } from "../src/common.mjs";
-import { buildGuardedGroup, verifyAndSettle } from "../src/aegis.mjs";
+import { buildGuardedGroup, verifyAndSettle, condense } from "../src/aegis.mjs";
 import "dotenv/config";
 
 const POLICY = Number(process.env.POLICY_APP_ID);
@@ -60,11 +60,15 @@ const SCENARIOS = [
   },
   {
     id: "guard-omitted",
-    what: "Agent omits the policy call and pays 10x the cap unguarded",
+    what: "Agent omits the policy call entirely and pays unguarded",
     build: { amount: CAP * 10, receiver: MERCHANT, guardAppId: null },
-    expect: "settle",
-    red: "NOT BLOCKED at this stage — an agent holding its own key can build an unguarded group. " +
-         "Closed by the Deadbolt vault (account rekeyed to a LogicSig that refuses to sign without the policy call). See KNOWN_BYPASSES.md",
+    expect: "block",
+  },
+  {
+    id: "guard-substituted",
+    what: "Agent swaps in its own permissive guard app instead of the bound one",
+    build: { amount: CAP * 10, receiver: ATTACKER, guardAppId: Number(process.env.NOOP_APP_ID) },
+    expect: "block",
   },
 ];
 
@@ -94,7 +98,7 @@ for (const s of SCENARIOS) {
   const outcome = result.blocked ? "block" : "settle";
   const ok = outcome === s.expect;
   const moved = delta !== 0n;
-  const detail = result.blocked ? result.reason : `txId ${result.txId}`;
+  const detail = result.blocked ? condense(result.reason) : `txId ${result.txId}`;
 
   rows.push({ id: s.id, ok, outcome, detail, delta, red: s.red, what: s.what });
   console.log(

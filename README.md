@@ -1,91 +1,108 @@
-# AEGIS402 — a spending firewall that lives in the ledger
+# AEGIS402 — guards for x402 payments on Algorand
 
 **An AI agent's reasoning layer is also its payment-authorization layer. One
 poisoned instruction and the wallet is empty.** AEGIS402 moves the spending
-policy out of the agent and into the Algorand transaction group, so a
-jailbroken agent can *decide* to overspend and the payment still cannot exist.
-
-The mechanism, in one paragraph: the x402 AVM facilitator does not whitelist
-transaction types. It validates the payment transfer at `paymentIndex` and its
-own fee transaction, forbids `keyreg` / in-group `rekeyTo` / close-outs across
-the group, and hands the **whole group** to `algod simulate`, accepting it only
-if simulate reports no failure. So a client-signed policy application call can
-ride in the same atomic group as the payment. If the policy rejects, simulate
-fails, `/settle` never submits, and no funds move — enforcement as a property
-of the ledger rather than of middleware. No facilitator fork, no protocol
-change, and because the facilitator's fee-payer transaction pools the fee for
-the entire group, **the guard costs the paying agent nothing**.
+policy out of the agent and into the Algorand transaction group, so a jailbroken
+agent can *decide* to overspend and the payment still cannot exist.
 
 ```
-  x402 payment group, guarded
-  ┌──────────────────────────────────────────────────────────────┐
-  │ [0] fee-payer pay      unsigned, facilitator signs at settle  │
-  │ [1] policy app-call    client-signed  ← AEGIS402 adds this    │
-  │ [2] payment axfer      client-signed  ← paymentIndex          │
-  └──────────────────────────────────────────────────────────────┘
-        policy rejects → simulate fails → group dies → 0 USDC moves
+  a guarded x402 payment — one atomic group, one fate
+  ┌──────────────────────────────────────────────────────────────────┐
+  │ [0] fee-payer          unsigned  → facilitator signs at settle    │
+  │ [1] guard app-call     operator key  → policy: cap + allowlist    │
+  │ [2] payment axfer      vault LogicSig → paymentIndex              │
+  └──────────────────────────────────────────────────────────────────┘
+     guard rejects → simulate fails → /settle never submits → 0 USDC moves
+     guard missing → the vault refuses to sign at all
 ```
 
-## The proof
+Three parts, each doing one job:
 
-Everything below is on Algorand TestNet, settled through the **live hosted
-GoPlausible facilitator** — not a local mock.
+* **Vault** — a LogicSig the agent account is rekeyed to. It signs an outgoing
+  transfer **only if** a call to its bound guard application, naming that
+  transfer's own group index, is in the same group. This is what makes the guard
+  unskippable rather than advisory.
+* **Guard** — an immutable application that reads the payment via `gtxns` and
+  approves or rejects it. Ours enforces a per-payment cap and a receiver
+  allowlist. Yours can enforce anything.
+* **Operator key** — signs the guard call and holds no money. If it leaks, the
+  attacker gains the ability to *ask for permission*, and nothing else.
 
-**A policy-compliant payment settles:**
-[`256SCA6TQLIWGL2MLN555X6XVZ6C5ZQBGZNICYWCTBWHIVELCEUA`](https://lora.algokit.io/testnet/transaction/256SCA6TQLIWGL2MLN555X6XVZ6C5ZQBGZNICYWCTBWHIVELCEUA)
-— 0.01 USDC moves.
+The facilitator is **unmodified**. Its fee-payer transaction pools the fee for
+the whole group, so the guard costs the paying agent nothing.
 
-**The same payment over the policy cap cannot exist:**
-> `Transaction simulation failed: transaction P4QQ4SBG5XQ4U3OTIZVQ4ZJKOF3MJAGK4YMJZ5ETVSRW74ZTQKZA: transaction rejected by ApprovalProgram`
+## Proof
 
-No transaction id, because there is no transaction. Agent balance delta: zero.
-The only difference between the two runs is one client-signed application call
-in the same atomic group.
+Live on TestNet through the hosted GoPlausible facilitator, 2026-07-31:
 
-**5 attacks blocked on-chain, 1 deliberately not blocked, 0 unexpected** —
-full table with verbatim facilitator responses in [PROOF.md](PROOF.md).
+**Policy-compliant payment settles** —
+[`QDARLDWMI7UYWV25MIKMYZFJV3IBCAK23KYYHV3WIQIBQ4LUONPQ`](https://lora.algokit.io/testnet/transaction/QDARLDWMI7UYWV25MIKMYZFJV3IBCAK23KYYHV3WIQIBQ4LUONPQ),
+0.01 USDC moves.
 
-Run it yourself:
+**Same payment over the cap cannot exist** —
+`transaction rejected by ApprovalProgram`, no transaction id, balance delta zero.
+
+**8 attack scenarios, 7 blocked on-chain, 0 unexpected** — including *omit the
+guard* and *substitute your own permissive guard*, both refused by the vault.
+Full table with verbatim chain responses: [PROOF.md](PROOF.md).
 
 ```bash
 npm install
-npm run status     # account funding / opt-in state
+npm run status     # funding / opt-in state
 npm run attack     # the full battery against the live facilitator
+npm run demo       # the story, paced for watching
 ```
 
-## What it does and does not do
+## What this is not
 
-`npm run attack` prints green rows for blocked attacks **and red rows for
-attacks that succeed**. The red rows are the point. See
-[KNOWN_BYPASSES.md](KNOWN_BYPASSES.md) — most importantly: the ledger gates the
-*payment*, not the off-chain *action*, and in this build an agent that holds
-its own key can still omit the guard. The vault design that closes that hole
-(account rekeyed to an immutable LogicSig that refuses to sign without the
-bound policy call) is specified and is the next milestone.
+The ledger gates the **payment**, not the off-chain **action**: a fully
+compromised agent can still do unpaid damage. Policy correctness is yours to get
+right. Nothing here is audited. The complete list is in
+[KNOWN_BYPASSES.md](KNOWN_BYPASSES.md), and `npm run attack` is built to print
+red rows when something is not blocked.
 
-## Why Algorand and not somewhere else
+## Prior work, and what is actually ours
 
-On an account-based chain with EIP-3009-style transfers you sign *a payment*.
-On Algorand you sign *a group*, and the group either commits entirely or not at
-all. That is what lets a security check and a payment share one indivisible
-outcome, with no escrow contract holding funds and no session-key
-infrastructure. ERC-4337 session keys and account abstraction can express
-similar policies on EVM — the difference is that here it is a property of the
-base layer, expressible in a few lines of TEAL, and it composes with an
-unmodified x402 facilitator.
+We are not claiming the primitive. An application call inspecting sibling
+transactions in an atomic group and vetoing a transfer is long-standing Algorand
+practice, and the x402 AVM scheme explicitly permits extra transactions in the
+payment group — `paymentIndex` exists precisely because the group was expected
+to contain more than the payment. GoPlausible's own documentation describes
+adding "smart contract calls" to the `paymentGroup` for "conditional payments",
+and the Algorand Foundation markets atomic grouping as letting "payments,
+authorization, and usage logic settle together".
+
+Related work enforces the same intent elsewhere: **KirkeLabs/oaa-agent-kit**
+constrains an Algorand x402 agent through a LogicSig mandate;
+**karangoraniya/agent-budget** implements on-chain spending policy over
+`@x402-avm`; **Akita** ships ARC-58 plugins with spending allowances;
+**Nevermined** and ERC-4337 session-key policies do the equivalent on EVM via
+smart accounts.
+
+What we contribute is narrower and, we think, useful: a **guard that travels
+inside the payment group itself**, verified end-to-end against a live
+third-party facilitator, combined with a vault that makes the guard impossible
+to omit or substitute — so the payer keeps an ordinary Algorand account holding
+ordinary USDC, with no asset wrapping, no custody, no smart-account migration
+and no facilitator changes. We searched the x402 spec repository, the Algorand
+and GoPlausible ecosystems and a large number of public x402 policy projects and
+did not find that specific composition published; we would genuinely like to be
+pointed at it if it exists.
+
+See [SPEC-NOTE.md](SPEC-NOTE.md) for the facilitator behaviour this relies on and
+one open question for its operators.
 
 ## Layout
 
 ```
-contracts/policy.teal   immutable Deadbolt policy: cap + receiver allowlist
-src/aegis.mjs           builds the guarded payment group (the whole thesis)
-src/server.mjs          a plain x402 merchant, unmodified, to pay against
-scripts/attack.mjs      falsification harness — green and red rows
-scripts/deploy.mjs      deploys the policy app (immutable: no update/delete)
-KNOWN_BYPASSES.md       what this does not protect against
-SPEC-NOTE.md            the facilitator invariant this relies on, in detail
+contracts/vault.teal.tmpl   the LogicSig that makes the guard unskippable
+contracts/policy.teal       the guard: cap + receiver allowlist, immutable
+src/aegis.mjs               builds the guarded payment group
+src/agent.mjs               a real LLM agent with a real payment tool
+src/server.mjs              a plain, unmodified x402 merchant to pay against
+scripts/attack.mjs          falsification harness
+scripts/vault-setup.mjs     compiles the vault and rekeys the agent account
+PROOF.md · KNOWN_BYPASSES.md · SPEC-NOTE.md
 ```
 
-## Status
-
-TestNet only. Not audited. Built for the Algorand x402 Hackathon 2026.
+TestNet only. Not audited. Built for the Algorand x402 Hackathon, July 2026.
