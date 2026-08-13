@@ -22,12 +22,15 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
     "@hono/node-server": "^2.0.12",
+    "@primuslabs/zktls-core-sdk": "^0.3.7",
     "@x402/avm": "^2.20.0",
     "@x402/core": "^2.20.0",
     "@x402/fetch": "^2.20.0",
     "@x402/hono": "^2.20.0",
     "algosdk": "^3.6.0",
     "dotenv": "^17.4.2",
-    "hono": "^4.12.33"
+    "ethers": "^5.8.0",
+    "hono": "^4.12.33",
+    "tslib": "^2.8.1"
   }
 }

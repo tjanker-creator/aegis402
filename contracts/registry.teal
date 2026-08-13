@@ -1,0 +1,153 @@
+#pragma version 10
+// ============================================================================
+// AEGIS402 — attestation registry (IMMUTABLE)
+//
+// An address earns its place on the guard's allowlist by being published by a
+// merchant's own domain and witnessed by an independent zkTLS attestor. This
+// contract verifies that attestation ON CHAIN and records the result.
+//
+// It recomputes the exact digest the attestor signed:
+//   requestHash  = keccak256(url || header || method || body)
+//   preimage     = recipient || requestHash || responseHash || data
+//                  || attConditions || timestamp || additionParams
+//   digest       = keccak256(preimage)
+// then recovers the signer with ecdsa_pk_recover and requires it to be the
+// allowlisted attestor. No prefix is applied: Primus signs the raw digest.
+//
+// call: "register"
+//   1 recipient       20 bytes
+//   2 url             string
+//   3 header          string
+//   4 method          string
+//   5 body            string
+//   6 responseHash    32 bytes
+//   7 data            string, exactly {"payTo":"<58-char address>"}
+//   8 attConditions   string
+//   9 timestamp       8 bytes, big endian
+//  10 additionParams  string
+//  11 signature       65 bytes, r || s || v
+//
+// On success it writes a box keyed by the attested payout address whose value
+// is the round it was attested in, so the guard can require freshness.
+// ============================================================================
+
+txn ApplicationID
+int 0
+==
+bnz allow
+
+// immutable: no update, no delete
+txn OnCompletion
+int NoOp
+==
+bz reject
+
+txn NumAppArgs
+int 12
+==
+bz reject
+
+txna ApplicationArgs 0
+byte "register"
+==
+bz reject
+
+// --- requestHash = keccak256(url || header || method || body) -------------
+txna ApplicationArgs 2
+txna ApplicationArgs 3
+concat
+txna ApplicationArgs 4
+concat
+txna ApplicationArgs 5
+concat
+keccak256
+store 0
+
+// --- preimage ------------------------------------------------------------
+txna ApplicationArgs 1        // recipient (20 bytes)
+load 0                        // requestHash
+concat
+txna ApplicationArgs 6        // responseHash
+concat
+txna ApplicationArgs 7        // data
+concat
+txna ApplicationArgs 8        // attConditions
+concat
+txna ApplicationArgs 9        // timestamp, 8 bytes BE
+concat
+txna ApplicationArgs 10       // additionParams
+concat
+keccak256
+store 1                       // digest
+
+// --- split the signature --------------------------------------------------
+txna ApplicationArgs 11
+int 0
+int 32
+extract3
+store 2                       // r
+
+txna ApplicationArgs 11
+int 32
+int 32
+extract3
+store 3                       // s
+
+txna ApplicationArgs 11
+int 64
+getbyte
+int 27
+-
+store 4                       // recovery id
+
+// --- recover the signer ---------------------------------------------------
+load 1
+load 4
+load 2
+load 3
+ecdsa_pk_recover Secp256k1
+concat                        // X || Y
+keccak256
+extract 12 20                 // last 20 bytes = ethereum-style address
+addr_check:
+byte ATTESTOR_ADDR
+==
+bz reject
+
+// --- the attested payout address ------------------------------------------
+// data is exactly {"payTo":"<58 chars>"} — 10 byte prefix, then the address
+txna ApplicationArgs 7
+len
+int 70
+==
+bz reject
+
+txna ApplicationArgs 7
+extract 0 10
+byte "{\"payTo\":\""
+==
+bz reject
+
+txna ApplicationArgs 7
+extract 10 58
+store 5
+
+// --- record it: box key = attested address, value = round -----------------
+load 5
+box_del
+pop
+load 5
+global Round
+itob
+box_put
+
+load 5
+log
+
+allow:
+int 1
+return
+
+reject:
+int 0
+return
