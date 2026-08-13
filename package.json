@@ -13,7 +13,11 @@
     "demo": "node scripts/demo.mjs",
     "jailbreak": "node scripts/jailbreak.mjs",
     "film": "node scripts/film.mjs",
-    "verify": "node scripts/verify.mjs"
+    "verify": "node scripts/verify.mjs",
+    "arena": "node src/arena.mjs",
+    "attest": "node scripts/attest.mjs",
+    "registry": "node scripts/registry.mjs",
+    "fee": "node scripts/fee-test.mjs"
   },
   "keywords": [],
   "author": "",
