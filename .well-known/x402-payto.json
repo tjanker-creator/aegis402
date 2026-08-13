@@ -1,0 +1,8 @@
+{
+  "$schema": "https://aegis402.dev/x402-payto.schema.json",
+  "domain": "raw.githubusercontent.com",
+  "network": "algorand-testnet",
+  "asset": 10458941,
+  "payTo": "GABQRET4USJ5PJM2EUV7PV6L64O7AP3E2XLS3HMUXFIMPMQLDFTFAMDWOM",
+  "updated": "2026-08-13"
+}

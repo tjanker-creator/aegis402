@@ -1,0 +1,109 @@
+#pragma version 10
+// ============================================================================
+// AEGIS402 — guard v2 (IMMUTABLE)
+//
+// Same enforcement as v1, plus the guard's own fee — and the fee is not
+// optional. The guard approves a payment only when the group ALSO contains a
+// transfer paying the guard's treasury. So the answer to "who pays for the
+// security?" is enforced by the security itself: no fee, no approval, no
+// payment.
+//
+// app args: [0] index of the payment txn, [1] index of the guard-fee txn
+//
+// Enforces on the payment : is an ASA transfer
+//                           amount <= CAP_MICRO
+//                           receiver == ALLOWED_RECEIVER
+// Enforces on the fee     : is an ASA transfer of the same asset
+//                           receiver == GUARD_TREASURY
+//                           amount >= 1% of the payment
+//                           amount >= FEE_MIN
+// ============================================================================
+
+txn ApplicationID
+int 0
+==
+bnz allow
+
+// immutable: only plain calls, never update or delete
+txn OnCompletion
+int NoOp
+==
+bz reject
+
+txn NumAppArgs
+int 2
+==
+bz reject
+
+txna ApplicationArgs 0
+btoi
+store 0          // payment index
+
+txna ApplicationArgs 1
+btoi
+store 1          // fee index
+
+// --- the payment ---------------------------------------------------------
+load 0
+gtxns TypeEnum
+int axfer
+==
+bz reject
+
+load 0
+gtxns AssetAmount
+int CAP_MICRO
+<=
+bz reject
+
+load 0
+gtxns AssetReceiver
+addr ALLOWED_RECEIVER
+==
+bz reject
+
+// --- the guard's fee -----------------------------------------------------
+load 1
+gtxns TypeEnum
+int axfer
+==
+bz reject
+
+load 1
+gtxns AssetReceiver
+addr GUARD_TREASURY
+==
+bz reject
+
+// paid in the same asset as the payment
+load 0
+gtxns XferAsset
+load 1
+gtxns XferAsset
+==
+bz reject
+
+// at least one percent of what is being protected
+load 1
+gtxns AssetAmount
+load 0
+gtxns AssetAmount
+int 100
+/
+>=
+bz reject
+
+// and never less than the floor
+load 1
+gtxns AssetAmount
+int FEE_MIN
+>=
+bz reject
+
+allow:
+int 1
+return
+
+reject:
+int 0
+return

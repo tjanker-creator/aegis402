@@ -1,0 +1,96 @@
+#pragma version 10
+// ============================================================================
+// AEGIS402 — vault v2 LogicSig (IMMUTABLE, template-compiled per vault)
+//
+// The agent account is rekeyed to this program once. Afterwards the account can
+// only spend when this program approves, and it approves an outgoing transfer
+// only if a call to the bound guard application appears in the SAME atomic
+// group naming this transaction's index.
+//
+// v2 accepts either of the guard call's two arguments — the payment index or
+// the guard-fee index — so both transfers of a guarded payment are authorised
+// by the same guard call, and neither can travel without it.
+//
+// Compiled with: GUARD_APP_ID
+// ============================================================================
+
+txn TypeEnum
+int axfer
+==
+assert
+
+txn RekeyTo
+global ZeroAddress
+==
+assert
+txn AssetCloseTo
+global ZeroAddress
+==
+assert
+txn CloseRemainderTo
+global ZeroAddress
+==
+assert
+
+// fees are covered by the facilitator's pooled fee transaction
+txn Fee
+int 0
+==
+assert
+
+int 0
+store 0          // loop counter
+int 0
+store 1          // found flag
+
+loop:
+  load 0
+  global GroupSize
+  <
+  bz done
+
+  load 0
+  gtxns TypeEnum
+  int appl
+  ==
+  bz next
+
+  load 0
+  gtxns ApplicationID
+  int GUARD_APP_ID
+  ==
+  bz next
+
+  // does the guard's payment argument name this transaction?
+  load 0
+  gtxnsa ApplicationArgs 0
+  btoi
+  txn GroupIndex
+  ==
+  bnz mark
+
+  // or its fee argument?
+  load 0
+  gtxnsa ApplicationArgs 1
+  btoi
+  txn GroupIndex
+  ==
+  bz next
+
+mark:
+  int 1
+  store 1
+
+next:
+  load 0
+  int 1
+  +
+  store 0
+  b loop
+
+done:
+  load 1
+  assert
+
+int 1
+return
