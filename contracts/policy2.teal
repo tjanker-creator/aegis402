@@ -43,10 +43,59 @@ txna ApplicationArgs 1
 btoi
 store 1          // fee index
 
+// --- a per-transaction cap is no cap unless the group is bounded ----------
+// Otherwise the holder of the operational key puts several transfers in one
+// group, each individually within the cap, and spends a multiple of it.
+// Count every asset transfer in the group: only the two we account for may
+// exist, and they must be distinct.
+int 0
+store 6
+int 0
+store 7
+
+count_loop:
+  load 6
+  global GroupSize
+  <
+  bz count_done
+  load 6
+  gtxns TypeEnum
+  int axfer
+  ==
+  bz count_next
+  load 7
+  int 1
+  +
+  store 7
+count_next:
+  load 6
+  int 1
+  +
+  store 6
+  b count_loop
+count_done:
+
+load 7
+int 2
+==
+bz reject
+
+load 0
+load 1
+==
+bnz reject
+
 // --- the payment ---------------------------------------------------------
 load 0
 gtxns TypeEnum
 int axfer
+==
+bz reject
+
+// a cap means nothing unless it is denominated in a known asset
+load 0
+gtxns XferAsset
+int GUARDED_ASSET
 ==
 bz reject
 
