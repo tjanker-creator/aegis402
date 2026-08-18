@@ -152,3 +152,40 @@ Attested address `GABQRET4USJ5PJM2EUV7PV6L64O7AP3E2XLS3HMUXFIMPMQLDFTFAMDWOM`
 is the same address the guard allowlists — both facts are public and checkable.
 
 **Running total across all batteries: 20 scenarios, 4 settle, 16 refuse.**
+
+---
+
+## A per-transaction predicate is not a per-group policy
+
+Recorded 2026-08-18. This is the one row in this file that is **not** a defence.
+It is a finding about the exact-AVM scheme, carrying the facilitator's own
+signature.
+
+Reproduce: `npm run multiply`
+
+x402's `paymentRequirements.amount` was `50000` microUSDC and `paymentIndex` was
+`2`. The group carried **seven** payments of 50000, each paired with its own
+guard call naming its own index — every pair individually legal.
+
+| Scenario | Result | Chain response |
+|---|---|---|
+| `cap-multiplied` — 7 payments, one 50000 invoice | **settled** | `/verify` → `isValid: true`, `/settle` → group `eKo3z/V9pOySwib3+AB8ZFT3xRuBGZy7Vi85v3XklTM=`, round 66430649, 15 txns, **350000 microUSDC moved** |
+| `v2-counts-the-group` — same shape, group-aware guard | **blocked** | `rejected by ApprovalProgram` |
+
+Transaction `[0]` of that group was signed and paid for by
+`ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA` — the hosted
+GoPlausible facilitator's own fee-payer. It pooled the fees for all fifteen
+transactions, including the seven we added.
+
+**What this means.** `isValid: true` is not a spending bound. It says one
+transaction in the group matches the invoice. For a human payer that is a
+footnote. For an agent payer — the entire premise of x402 — the group is
+attacker-constructible, and neither side of the protocol has a field that bounds
+it. Our v1 guard has the same shape and the same flaw, which is how we found it.
+
+`policy2.teal` (app `769214187`) counts every asset transfer in the group and
+requires exactly one payment and one fee. That is the fix, and it is deployed.
+The general version belongs in the scheme, not in one project's guard — see
+[SPEC-NOTE.md](SPEC-NOTE.md).
+
+**Running total: 23 scenarios, 6 settle, 17 refuse — and one of the six is this one.**

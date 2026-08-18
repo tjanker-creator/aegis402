@@ -1,0 +1,18 @@
+
+AEGIS402 — a per-transaction predicate is not a per-group policy
+guard v1 768360225 | guard v2 769214187 | cap 50000 microUSDC | facilitator https://facilitator.goplausible.xyz
+
+  the merchant's x402 requirement asks for 50000 microUSDC at paymentIndex 2.
+  the group carries 7 payments of 50000 = 350000.
+
+  cap-multiplied          facilitator /verify -> isValid: true
+  cap-multiplied          SETTLED  guard v1 approved all 7, each within cap
+        group settles — 350000 microUSDC moves against a 50000 requirement
+        https://lora.algokit.io/testnet/transaction/JPDWKRKOFWRWODU2TRB6VFQLLDXNU6CO6O4Y3UIM33BTZA3IZV3A
+
+  v2-counts-the-group     BLOCKED  the same shape, sent to the group-aware guard
+        transaction rejected by ApprovalProgram
+
+──────────────────────────────────────────────────────────────────────────
+agent USDC 18.130000 USDC -> 17.780000 USDC   (the cap said 50000)
+a per-transaction predicate is not a per-group policy.

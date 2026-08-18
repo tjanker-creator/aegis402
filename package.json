@@ -20,7 +20,8 @@
     "attest": "node scripts/attest.mjs",
     "onchain": "node scripts/onchain.mjs",
     "attested": "node scripts/attested.mjs",
-    "deploy-v3": "node scripts/deploy-v3.mjs"
+    "deploy-v3": "node scripts/deploy-v3.mjs",
+    "multiply": "node scripts/multiply.mjs"
   },
   "keywords": [],
   "author": "",

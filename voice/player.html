@@ -342,7 +342,7 @@
 
   <!-- 17 -->
   <div class="scene" data-scene="proof">
-    <p class="eyebrow rv">Live TestNet · twenty scenarios · four settle, sixteen refuse</p>
+    <p class="eyebrow rv">Live TestNet · twenty-three scenarios · seventeen refuse</p>
     <table id="tbl">
       <tr><th>Attack</th><th>Result</th><th>Refused by</th></tr>
       <tr><td>Pay ten times the cap</td><td class="s">blocked</td><td>guard</td></tr>
@@ -357,6 +357,7 @@
       <tr><td>Fee paid to the wrong address</td><td class="s">blocked</td><td>guard</td></tr>
       <tr><td>Two payments in one group, each within cap</td><td class="s">blocked</td><td>guard</td></tr>
       <tr><td>Forged attestation</td><td class="s">blocked</td><td>registry</td></tr>
+      <tr><td>Seven payments in one group, each within cap</td><td class="s" style="color:var(--stop)">settled</td><td><span style="color:var(--stop)">nothing — the scheme bounds a payment, not a group</span></td></tr>
       <tr><td>Forged attestation <b>inside the payment group</b></td><td class="s">blocked</td><td>registry <span style="color:var(--guard)">· payment dies with it</span></td></tr>
       <tr><td>Redirect — submitted straight to a node</td><td class="s">blocked</td><td>guard <span style="color:var(--guard)">· no facilitator</span></td></tr>
       <tr><td>Over the cap — submitted straight to a node</td><td class="s">blocked</td><td>guard <span style="color:var(--guard)">· no facilitator</span></td></tr>
@@ -372,7 +373,7 @@
       <div class="was struck-target" id="wasline">KNOWN_BYPASSES.md, v1: “a stolen operational key cannot exceed the cap”</div>
       <div class="now rv">It could. The cap was per transaction — v1 never bounded the group.</div>
     </div>
-    <p class="rv">v2 counts the transfers and pins the asset. v1 is immutable, so it stays wrong, and it stays documented.</p>
+    <div class="term" id="t-multiply" style="margin-top:.6rem"></div>
   </div>
 
   <!-- 19 -->
@@ -483,7 +484,8 @@ const SCENES={
   attest: d=>{ const kids=[...$("#flow").children]; kids.forEach(k=>k.classList.remove("lit"));
                kids.forEach((k,i)=>later(()=>k.classList.add("lit"), d*1000*(0.12+i*0.08))); },
   correction: d=>{ const w=$("#wasline"); w.classList.remove("struck");
-               later(()=>w.classList.add("struck"), d*1000*0.38); },
+               later(()=>w.classList.add("struck"), d*1000*0.28);
+               typeInto($("#t-multiply"), CAPS.multiply, d*1000*0.90); },
   proof:  d=>{ const r=$$("#tbl tr"); r.forEach(x=>x.classList.remove("lit"));
                r.forEach((x,i)=>later(()=>x.classList.add("lit"), d*1000*(0.05+i*0.05))); },
   summary:d=>{ const r=$$("#sum .r"); r.forEach(x=>x.classList.remove("lit"));

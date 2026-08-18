@@ -21,6 +21,7 @@ async function buildV1(pairs) {
     }));
     txns.push(algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
       sender: agent.addr, receiver: merchant, assetIndex: USDC_ASA_ID, amount: CAP,
+      note: new TextEncoder().encode("x402-payment-" + j),
       suggestedParams: { ...sp, fee: 0, flatFee: true },
     }));
   }

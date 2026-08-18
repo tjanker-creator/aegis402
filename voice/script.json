@@ -82,17 +82,17 @@
  {
   "id": "16-proof",
   "scene": "proof",
-  "text": "Twenty scenarios now — against the live facilitator, and against a bare node. Four settle, sixteen refuse, all as expected. And you need not trust any of it: the account's spending authority is public, and recompiling the published logic signature reproduces that address."
+  "text": "Twenty-three scenarios now — against the live facilitator, and against a bare node. Seventeen refuse. Five settle as designed, and one settles that should not have. You need not trust any of it: the account's spending authority is public."
  },
  {
   "id": "17-correction",
   "scene": "correction",
-  "text": "One correction, because you would find it anyway. Our bypass file claimed a stolen operational key could not exceed the cap. It could: the cap was per transaction, and version one bounded neither the group nor the asset. Version two fixes both. Version one is immutable, so it stays wrong, and documented."
+  "text": "One correction, and it is bigger than us. Our bypass file said a stolen operational key could not exceed the cap. It could — and so can anyone's. We built one x402 group carrying seven payments against a five-cent invoice. GoPlausible's live facilitator called it valid, and settled all seven. Thirty-five cents. The scheme validates a payment; it does not bound a group. Guard two counts the group and refuses. That is the section the ARC has to write."
  },
  {
   "id": "18-summary",
   "scene": "summary",
-  "text": "So, in thirty seconds. A guard rides inside the x402 payment group, so policy is checked by the ledger and not by the agent that was compromised. A logic signature makes it unskippable — no guard, no signature, no payment. It charges for itself inside the transaction it protects, which no off-chain service can do. And a payment can carry the cryptographic proof of where its payee came from."
+  "text": "So, in thirty seconds. A guard rides inside the x402 payment group, so policy is checked by the ledger and not by the agent that was compromised. A logic signature makes it unskippable. It charges for itself inside the transaction it protects. And a payment can carry the proof of where its payee came from."
  },
  {
   "id": "19-close",
