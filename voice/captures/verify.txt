@@ -1,0 +1,18 @@
+  [1mIndependent verification[0m
+[2m  public node · published source · no trust in this repo
+[0m
+  [32mok  [0m  the agent's own key can no longer move its funds
+        [2mBENS63EQYQ4T6IJPAOAJSXXHEYV72W6OWFHGPFPQTRJ7HQXDOD32OLULGM[0m
+        [2mspending authority is not DORZEEZDH7… — it is the vault[0m
+  [32mok  [0m  the vault is exactly the published program, with no second key
+        [2mBENS63EQYQ4T6IJPAOAJSXXHEYV72W6OWFHGPFPQTRJ7HQXDOD32OLULGM[0m
+        [2mrecompiled contracts/vault.teal.tmpl → this hash === the account's auth-addr[0m
+  [32mok  [0m  guard app 768360225 accepts NoOp calls only (update and delete are rejected)
+        [2mno update or delete path in the approval program[0m
+        [2mprogram hash CiACAAExGCISQABUMRkiEkEA…[0m
+  [1mlive from the node[0m
+        agent holds [1m19.360000[0m USDC (ASA 10458941)
+[2m        https://lora.algokit.io/testnet/account/DORZEEZDH73RWH7ETRTVBMDECSA7JT5ZU6IFAFTOFHTSB3O33F3WCWXOXI
+[0m
+[32m  Everything above was checked against public chain data.
+[0m

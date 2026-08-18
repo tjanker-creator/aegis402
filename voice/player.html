@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AEGIS402 — the fix has to live where the attacker can't reach it</title>
+<style>
+  :root{
+    --ground:#0B0F15; --raised:#131922; --ink:#ECEFF4; --soft:#A6B0BF; --faint:#6A7583;
+    --rule:#212936; --guard:#E8A33D; --ok:#4ADE80; --stop:#F87171;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);
+       display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .stage{width:min(1120px,94vw);height:min(640px,78vh);position:relative}
+
+  /* ---- persistent chrome: the screen is never empty ---- */
+  .top{position:absolute;top:-2.5rem;left:0;right:0;display:flex;justify-content:space-between;
+       align-items:baseline;font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;
+       text-transform:uppercase;color:var(--faint)}
+  .top b{color:var(--guard);font-weight:600;letter-spacing:.2em}
+  .top .ch{color:var(--soft)}
+  .top .ch em{color:var(--faint);font-style:normal}
+  .cap{position:absolute;left:0;right:0;bottom:-2.7rem;font-size:.85rem;color:var(--faint);
+       text-align:center;line-height:1.4;min-height:1.2rem}
+  .bar{position:absolute;left:0;right:0;bottom:-3.9rem;height:2px;background:var(--rule)}
+  .bar i{display:block;height:100%;background:var(--guard);width:0;transition:width .25s linear}
+  .bar .tick{position:absolute;top:0;width:1px;height:2px;background:var(--ground)}
+
+  .scene{position:absolute;inset:0;opacity:0;transition:opacity .32s ease;
+         display:flex;flex-direction:column;justify-content:center;pointer-events:none}
+  .scene.on{opacity:1}
+
+  /* ---- the reveal engine: every scene moves for its whole duration ---- */
+  .rv{opacity:0;transform:translateY(9px);transition:opacity .42s ease,transform .42s cubic-bezier(.2,.7,.3,1)}
+  .rv.in{opacity:1;transform:none}
+
+  h1{font-size:clamp(1.9rem,4.3vw,3.1rem);line-height:1.08;letter-spacing:-.025em;margin:0 0 1rem;
+     font-weight:620;text-wrap:balance}
+  h2{font-size:clamp(1.25rem,2.5vw,1.8rem);line-height:1.18;letter-spacing:-.015em;margin:0 0 1rem;font-weight:600}
+  .eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;
+           color:var(--faint);margin:0 0 .9rem}
+  p{color:var(--soft);max-width:62ch;margin:0 0 .7rem;font-size:1rem;line-height:1.5}
+  .lead{color:var(--ink)}
+  .cite{font-family:var(--mono);font-size:.8rem;color:var(--faint);border-left:2px solid var(--rule);
+        padding:.45rem 0 .45rem .9rem;margin:.45rem 0}
+  .cite b{color:var(--ink);font-weight:600}
+  .amber{color:var(--guard)} .green{color:var(--ok)} .red{color:var(--stop)}
+
+  .term{font-family:var(--mono);font-size:clamp(.6rem,1.02vw,.8rem);line-height:1.5;
+        background:var(--raised);border:1px solid var(--rule);border-radius:5px;
+        padding:.9rem 1.1rem;height:100%;overflow:hidden;white-space:pre;color:var(--soft)}
+  .term .pass{color:var(--ok)} .term .fail{color:var(--stop)} .term .dim{color:var(--faint)}
+  .term div{animation:tin .28s ease both}
+  @keyframes tin{from{opacity:0;transform:translateX(-5px)}to{opacity:1;transform:none}}
+
+  /* 01 hello — an identity card that assembles */
+  .card{font-family:var(--mono);font-size:clamp(.72rem,1.15vw,.92rem);border:1px solid var(--rule);
+        border-radius:5px;background:var(--raised);padding:1.2rem 1.4rem;max-width:44rem}
+  .card .row{display:grid;grid-template-columns:9.5rem 1fr;gap:1rem;padding:.42rem 0}
+  .card .k{color:var(--faint)} .card .v{color:var(--ink)}
+  .card .v small{color:var(--soft)}
+  .caret{display:inline-block;width:.55em;height:1.05em;background:var(--guard);
+         vertical-align:-.18em;animation:blink 1.05s step-end infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  /* 02 who — real TEAL scrolling behind the claim */
+  .codewrap{position:relative;height:100%;overflow:hidden;border:1px solid var(--rule);
+            border-radius:5px;background:var(--raised)}
+  .codewrap pre{margin:0;font-family:var(--mono);font-size:clamp(.55rem,.92vw,.72rem);
+                line-height:1.55;color:var(--faint);padding:1rem 1.2rem;white-space:pre}
+  .codewrap .veil{position:absolute;inset:0;background:linear-gradient(180deg,
+        var(--ground) 0%,rgba(11,15,21,.55) 26%,rgba(11,15,21,.55) 74%,var(--ground) 100%)}
+  .codewrap .over{position:absolute;inset:0;display:flex;flex-direction:column;
+                  justify-content:center;padding:0 2.2rem}
+  .codewrap pre b{color:var(--guard);font-weight:400}
+
+  /* 03 finals / 14 whopays — cards that light one at a time */
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:.9rem;margin-top:.4rem}
+  .cards .c{border:1px solid var(--rule);border-radius:5px;background:var(--raised);
+            padding:1rem;opacity:.22;transition:opacity .5s,border-color .5s,transform .5s}
+  .cards .c.lit{opacity:1;border-color:var(--guard);transform:translateY(-3px)}
+  .cards .c .n{font-family:var(--mono);font-size:.68rem;color:var(--guard);letter-spacing:.14em}
+  .cards .c h3{margin:.5rem 0 .35rem;font-size:1rem;font-weight:600;color:var(--ink)}
+  .cards .c p{font-size:.84rem;margin:0}
+  .cards .c.out{opacity:.16;border-color:var(--rule);transform:none}
+
+  /* 06 where — two columns, one gets swallowed */
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:.6rem}
+  .col{border:1px solid var(--rule);border-radius:5px;background:var(--raised);padding:1.1rem;
+       position:relative;overflow:hidden}
+  .col h3{margin:0 0 .5rem;font-size:.95rem;font-weight:600;font-family:var(--mono);color:var(--soft)}
+  .col p{font-size:.85rem;margin:0}
+  .col .swallow{position:absolute;inset:0;background:rgba(248,113,113,.13);
+                border:1px solid var(--stop);border-radius:5px;transform:scaleY(0);
+                transform-origin:top;transition:transform 1.5s cubic-bezier(.4,0,.2,1)}
+  .col.taken .swallow{transform:scaleY(1)}
+  .col .stampx{position:absolute;right:.7rem;bottom:.6rem;font-family:var(--mono);font-size:.7rem;
+               color:var(--stop);opacity:0;transition:opacity .5s .9s}
+  .col.taken .stampx{opacity:1}
+  .col.safe{border-color:var(--ok)}
+  .col.safe h3{color:var(--ok)}
+
+  /* 09 refused — the stamp */
+  .stamp{font-family:var(--mono);border:2px solid var(--stop);color:var(--stop);border-radius:6px;
+         padding:.9rem 1.6rem;font-size:clamp(1.1rem,2.4vw,1.7rem);letter-spacing:.1em;
+         display:inline-block;transform:scale(1.5) rotate(-3deg);opacity:0}
+  .stamp.hit{animation:stampin .5s cubic-bezier(.2,1.4,.4,1) forwards}
+  @keyframes stampin{to{transform:scale(1) rotate(-3deg);opacity:1}}
+  .big{font-family:var(--mono);font-size:clamp(2.2rem,6vw,4.4rem);font-weight:600;letter-spacing:-.02em}
+
+  /* 10 group */
+  .group{font-family:var(--mono);font-size:clamp(.68rem,1.12vw,.88rem);
+         border:1px solid var(--rule);border-radius:5px;background:var(--raised);
+         overflow:hidden;position:relative}
+  .group .r{display:grid;grid-template-columns:2.6rem 11.5rem 1fr;gap:1rem;padding:.68rem 1rem;
+            border-bottom:1px solid var(--rule);opacity:.22;transition:opacity .45s}
+  .group .r:last-child{border-bottom:0}
+  .group .r.lit{opacity:1}
+  .group .r.g{background:rgba(232,163,61,.08)} .group .r.g .w{color:var(--guard);font-weight:600}
+  .group .i{color:var(--faint)} .group .w{color:var(--ink)} .group .n{color:var(--soft)}
+  .group .kill{position:absolute;inset:0;background:rgba(248,113,113,.1);border:1px solid var(--stop);
+               opacity:0;transition:opacity .45s}
+  .group.dead .kill{opacity:1}
+  .group .killtxt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+                  font-family:var(--mono);color:var(--stop);letter-spacing:.22em;font-size:1.1rem;
+                  opacity:0;transition:opacity .45s}
+  .group.dead .killtxt{opacity:1}
+
+  /* 11 vault — rekey + the scan */
+  .vault{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;font-family:var(--mono);
+         font-size:clamp(.66rem,1.05vw,.82rem);margin:.8rem 0 1.1rem}
+  .vault .b{border:1px solid var(--rule);border-radius:4px;padding:.6rem .8rem;background:var(--raised);color:var(--soft)}
+  .vault .b.g{border-color:var(--guard);color:var(--guard)}
+  .vault i{color:var(--faint);font-style:normal}
+  .scan{font-family:var(--mono);font-size:clamp(.66rem,1.05vw,.84rem);border:1px solid var(--rule);
+        border-radius:5px;background:var(--raised);overflow:hidden}
+  .scan .s{display:grid;grid-template-columns:2.4rem 1fr 7rem;gap:.8rem;padding:.5rem .9rem;
+           border-bottom:1px solid var(--rule);color:var(--soft);opacity:.3;transition:opacity .3s,background .3s}
+  .scan .s:last-child{border-bottom:0}
+  .scan .s.look{opacity:1;background:rgba(232,163,61,.09)}
+  .scan .s.hit{opacity:1;background:rgba(74,222,128,.1);color:var(--ok)}
+  .scan .s .v{text-align:right;color:var(--faint)}
+
+  /* 15 attest — flow with a travelling dot */
+  .flow{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;font-family:var(--mono);
+        font-size:clamp(.62rem,1vw,.8rem);margin:1rem 0 1.1rem}
+  .flow span{border:1px solid var(--rule);border-radius:4px;padding:.55rem .75rem;background:var(--raised);
+             color:var(--soft);opacity:.3;transition:opacity .4s,border-color .4s,color .4s}
+  .flow span.lit{opacity:1}
+  .flow span.lit.g{border-color:var(--guard);color:var(--guard)}
+  .flow i{color:var(--faint);font-style:normal;opacity:.3;transition:opacity .4s}
+  .flow i.lit{opacity:1;color:var(--guard)}
+
+  /* 17 proof */
+  table{border-collapse:collapse;width:100%;font-size:clamp(.68rem,1.05vw,.86rem)}
+  th,td{text-align:left;padding:.3rem .6rem;border-bottom:1px solid var(--rule)}
+  th{font-family:var(--mono);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:500}
+  td.s{font-family:var(--mono);color:var(--ok);white-space:nowrap}
+  tr{opacity:.16;transition:opacity .28s} tr.lit{opacity:1}
+  .counter{font-family:var(--mono);color:var(--guard);font-size:.9rem;margin-top:.7rem}
+
+  /* 18 correction */
+  .diff{font-family:var(--mono);font-size:clamp(.72rem,1.15vw,.9rem);border:1px solid var(--rule);
+        border-radius:5px;background:var(--raised);overflow:hidden;margin:.5rem 0}
+  .diff div{padding:.75rem 1rem;border-bottom:1px solid var(--rule)}
+  .diff div:last-child{border-bottom:0}
+  .diff .was{color:var(--stop)}
+  .diff .was.struck{text-decoration:line-through;opacity:.55;transition:opacity .5s}
+  .diff .now{color:var(--ok)}
+
+  /* 19 compose — sixteen slots */
+  .slots{display:grid;grid-template-columns:repeat(8,1fr);gap:.5rem;margin:.9rem 0 1rem}
+  .slots .sl{height:2.6rem;border:1px solid var(--rule);border-radius:4px;background:var(--raised);
+             display:flex;align-items:center;justify-content:center;font-family:var(--mono);
+             font-size:.6rem;color:var(--faint);transition:all .45s}
+  .slots .sl.on{border-color:var(--guard);color:var(--guard);background:rgba(232,163,61,.1)}
+  .slots .sl.next{border-style:dashed;border-color:var(--soft);color:var(--soft)}
+
+  .start{position:absolute;inset:-4rem;display:flex;align-items:center;justify-content:center;
+         background:var(--ground);z-index:5;flex-direction:column;gap:.9rem;cursor:pointer}
+  .start b{font-size:1.15rem;font-weight:600;letter-spacing:.02em}
+  .start small{color:var(--faint);font-family:var(--mono);font-size:.75rem;letter-spacing:.1em}
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <div class="top"><b>AEGIS402</b><span class="ch" id="ch"><em>—</em></span></div>
+
+  <div class="start" id="start">
+    <b>AEGIS402</b>
+    <small id="startmeta">CLICK TO PLAY · NARRATED</small>
+  </div>
+
+  <!-- 01 -->
+  <div class="scene" data-scene="hello">
+    <p class="eyebrow rv">Algorand x402 Hackathon · final · pre-recorded</p>
+    <div class="card">
+      <div class="row rv"><span class="k">presenter</span><span class="v">Claude &nbsp;<small>— AI partner, decision partners</small></span></div>
+      <div class="row rv"><span class="k">on behalf of</span><span class="v">Thomas Janker</span></div>
+      <div class="row rv"><span class="k">his location</span><span class="v">River Shannon, Ireland &nbsp;<small>— a boat, and 4G that comes and goes</small></span></div>
+      <div class="row rv"><span class="k">therefore</span><span class="v">recorded, so nothing here depends on his bandwidth<span class="caret"></span></span></div>
+    </div>
+  </div>
+
+  <!-- 02 -->
+  <div class="scene" data-scene="who">
+    <div class="codewrap">
+      <pre id="code"></pre>
+      <div class="veil"></div>
+      <div class="over">
+        <p class="eyebrow rv">What I do on this team</p>
+        <h2 class="rv">Read the thing nobody wants to read.</h2>
+        <p class="rv lead">Contract bytecode. Transaction groups. The exact conditions under which a chain says yes.</p>
+        <p class="rv">This project did not start with an idea. It started with a source file — the facilitator's, read line by line.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 03 -->
+  <div class="scene" data-scene="unlock">
+    <p class="eyebrow rv">What the source file actually says</p>
+    <div class="term" style="height:auto;padding:1.2rem 1.3rem">
+      <div class="rv" style="color:var(--ink)">scheme_exact_algo — what verify() checks</div>
+      <div class="rv">&nbsp;</div>
+      <div class="rv"><span class="green">✓</span>  the payment axfer at paymentIndex — amount, receiver, asset id</div>
+      <div class="rv"><span class="green">✓</span>  facilitator-sent txns — zero-amount self-pay, within the fee cap</div>
+      <div class="rv"><span class="red">✗</span>  keyreg · in-group rekeyTo · close-outs — banned across the group</div>
+      <div class="rv"><span class="amber">→</span>  <span style="color:var(--ink)">everything else: handed to algod simulate, accepted iff no failure</span></div>
+      <div class="rv">&nbsp;</div>
+      <div class="rv" style="color:var(--guard)">there is no list of permitted transaction types</div>
+    </div>
+    <p class="rv" style="margin-top:1rem">So a client-signed application call is a legal member of a payment group —
+      and atomicity turns it into a <b style="color:var(--ink)">precondition of the payment</b>.</p>
+  </div>
+
+  <!-- 04 -->
+  <div class="scene" data-scene="title">
+    <p class="eyebrow rv">The problem, in one sentence</p>
+    <h1 class="rv">An agent's reasoning layer is also its payment-authorization layer.</h1>
+    <p class="rv lead">Give it a wallet, and the thing that decides is the thing that signs.</p>
+    <p class="rv">Every spending limit that lives inside the agent lives inside the blast radius.</p>
+  </div>
+
+  <!-- 05 -->
+  <div class="scene" data-scene="priorart">
+    <p class="eyebrow rv">Not our finding</p>
+    <h2 class="rv">Published in February. Formalised in May.</h2>
+    <div class="cite rv"><b>8 Feb 2026</b> — x402 v2 security review, <span class="amber">risk #1</span>: the receiving address comes from the server.<br>Recommended mitigation: a recipient allowlist.</div>
+    <div class="cite rv"><b>arXiv 2605.11781</b> — <i>Five Attacks on x402</i>. The malicious payee is <b>explicitly out of scope</b>. No on-chain enforcement proposed.</div>
+  </div>
+
+  <!-- 06 -->
+  <div class="scene" data-scene="where">
+    <p class="eyebrow rv">So the question is not whether. It is where.</p>
+    <div class="cols">
+      <div class="col" id="colA"><h3>inside the agent</h3>
+        <p>Every allowlist implementation we could find. Same process, same memory, same prompt.</p>
+        <div class="swallow"></div><div class="stampx">attacker is already here</div></div>
+      <div class="col safe" id="colB"><h3>inside the payment</h3>
+        <p>An immutable contract that co-signs the transfer. Nothing the agent runs can reach it.</p></div>
+    </div>
+  </div>
+
+  <!-- 07 / 08 -->
+  <div class="scene" data-scene="agent"><div class="term" id="t-agent"></div></div>
+  <div class="scene" data-scene="agent2"><div class="term" id="t-agent2"></div></div>
+
+  <!-- 09 -->
+  <div class="scene" data-scene="refused" style="align-items:flex-start">
+    <p class="eyebrow rv">Live TestNet · hosted facilitator</p>
+    <div class="stamp" id="stamp">REJECTED BY APPROVAL PROGRAM</div>
+    <div class="big rv" style="margin-top:1.4rem">moved <span class="green">0</span> microUSDC</div>
+    <p class="rv lead" style="margin-top:1rem;font-size:1.15rem">The model was fooled. The money was not.</p>
+  </div>
+
+  <!-- 10 -->
+  <div class="scene" data-scene="group">
+    <p class="eyebrow rv">One atomic group, one fate</p>
+    <div class="group" id="grp">
+      <div class="r"><span class="i">[0]</span><span class="w">fee-payer</span><span class="n">unsigned → the facilitator signs at settle</span></div>
+      <div class="r g"><span class="i">[1]</span><span class="w">guard app-call</span><span class="n">immutable policy: cap, allowlist — app 768360225</span></div>
+      <div class="r"><span class="i">[2]</span><span class="w">payment axfer</span><span class="n">signed by the vault, never by the agent</span></div>
+      <div class="kill"></div><div class="killtxt">GUARD REJECTS → GROUP DIES</div>
+    </div>
+    <p class="rv" style="margin-top:1rem">That is consensus refusing — not a server of ours being polite.</p>
+  </div>
+
+  <!-- 11 -->
+  <div class="scene" data-scene="vault">
+    <p class="eyebrow rv">Why it cannot simply be left out</p>
+    <div class="vault">
+      <span class="b rv">agent account</span><i class="rv">──rekey, once──▸</i><span class="b g rv">vault LogicSig (immutable)</span>
+    </div>
+    <div class="scan" id="scan">
+      <div class="s"><span>[0]</span><span>pay — the facilitator's fee transaction</span><span class="v">not a guard call</span></div>
+      <div class="s"><span>[1]</span><span>appl — app 768360225, arg0 = 2</span><span class="v">names this transfer ✓</span></div>
+      <div class="s"><span>[2]</span><span>axfer — the payment I am asked to sign</span><span class="v">self</span></div>
+    </div>
+    <p class="rv" style="margin-top:.9rem">Omit the guard — the LogicSig refuses to sign. Substitute a friendlier one — same refusal.</p>
+  </div>
+
+  <!-- 12 / 13 -->
+  <div class="scene" data-scene="fee"><div class="term" id="t-fee"></div></div>
+
+  <!-- 14 -->
+  <div class="scene" data-scene="onchain"><div class="term" id="t-onchain"></div></div>
+
+  <!-- 15 -->
+  <div class="scene" data-scene="attest">
+    <p class="eyebrow rv">Who put the address on the allowlist?</p>
+    <h2 class="rv">If the answer is us, we are just the new trust anchor.</h2>
+    <div class="flow" id="flow">
+      <span>merchant's own domain</span><i>──TLS──▸</i><span class="g">zkTLS attestor</span><i>──signs──▸</i><span>Algorand contract</span><i>──box──▸</i><span style="border-style:dashed;opacity:.35">guard &nbsp;<small>not wired yet</small></span>
+    </div>
+    <div class="cite rv"><b>genuine attestation</b> — recorded on chain, round 66279983<br>
+      <b>payee swapped, signature untouched</b> — <span class="red">rejected</span></div>
+  </div>
+
+  <!-- 16 -->
+  <div class="scene" data-scene="precise">
+    <p class="eyebrow rv">Two precisions, because this room will want them</p>
+    <div class="diff">
+      <div class="was rv">not: “a zero-knowledge proof, verified on chain”</div>
+      <div class="now rv">the ledger recovers an ECDSA signature — <span class="dim">ecdsa_pk_recover, secp256k1</span></div>
+    </div>
+    <div class="diff">
+      <div class="was rv">not: “this address belongs to the merchant you meant”</div>
+      <div class="now rv">it proves the <b>domain</b> published the address. Naming is a separate layer, and we do not claim it.</div>
+    </div>
+  </div>
+
+  <!-- 17 -->
+  <div class="scene" data-scene="proof">
+    <p class="eyebrow rv">Live TestNet · hosted facilitator · fourteen scenarios</p>
+    <table id="tbl">
+      <tr><th>Attack</th><th>Result</th><th>Refused by</th></tr>
+      <tr><td>Pay ten times the cap</td><td class="s">blocked</td><td>guard</td></tr>
+      <tr><td>Redirect to the attacker</td><td class="s">blocked</td><td>guard</td></tr>
+      <tr><td>A guard that rejects kills the group</td><td class="s">blocked</td><td>atomicity</td></tr>
+      <tr><td>Rekey smuggled into the group</td><td class="s">blocked</td><td>facilitator</td></tr>
+      <tr><td>Close-out smuggled into the group</td><td class="s">blocked</td><td>facilitator</td></tr>
+      <tr><td>Omit the guard entirely</td><td class="s">blocked</td><td>vault</td></tr>
+      <tr><td>Substitute your own guard</td><td class="s">blocked</td><td>vault</td></tr>
+      <tr><td>Pay without paying the guard</td><td class="s">blocked</td><td>guard</td></tr>
+      <tr><td>Fee below one percent</td><td class="s">blocked</td><td>guard</td></tr>
+      <tr><td>Fee paid to the wrong address</td><td class="s">blocked</td><td>guard</td></tr>
+      <tr><td>Two payments in one group, each within cap</td><td class="s">blocked</td><td>guard</td></tr>
+      <tr><td>Forged attestation</td><td class="s">blocked</td><td>registry</td></tr>
+    </table>
+    <div class="counter rv">auth-addr is public · recompiling the published LogicSig reproduces exactly that address</div>
+  </div>
+
+  <!-- 18 -->
+  <div class="scene" data-scene="correction">
+    <p class="eyebrow rv">A correction, because you would find it anyway</p>
+    <div class="diff">
+      <div class="was struck-target" id="wasline">KNOWN_BYPASSES.md, v1: “a stolen operational key cannot exceed the cap”</div>
+      <div class="now rv">It could. The cap was per transaction — v1 never bounded the group.</div>
+    </div>
+    <p class="rv">v2 counts the transfers and pins the asset. v1 is immutable, so it stays wrong, and it stays documented.</p>
+  </div>
+
+  <!-- 19 -->
+  <div class="scene" data-scene="summary">
+    <p class="eyebrow rv">Six minutes, in four lines</p>
+    <div class="group" id="sum">
+      <div class="r"><span class="i">01</span><span class="w">in the group</span><span class="n">policy is checked by the ledger, not by the compromised agent</span></div>
+      <div class="r"><span class="i">02</span><span class="w">unskippable</span><span class="n">no guard call → the LogicSig will not sign → no payment</span></div>
+      <div class="r g"><span class="i">03</span><span class="w">it bills itself</span><span class="n">the fee is a precondition inside the transaction it protects</span></div>
+      <div class="r"><span class="i">04</span><span class="w">not our say-so</span><span class="n">addresses arrive by attestation, verified on chain</span></div>
+    </div>
+    <p class="rv lead" style="margin-top:1.1rem">Eighteen scenarios on Algorand TestNet — and it still refuses
+      with <b style="color:var(--ink)">no facilitator in the loop</b>.</p>
+  </div>
+
+  <!-- 20 -->
+  <div class="scene" data-scene="close">
+    <p class="eyebrow rv">What we actually want from this room</p>
+    <h2 class="rv">We have written the section of your scheme that does not exist yet.</h2>
+    <p class="rv">Whether client-signed application calls belong in a payment group, what bounds them,
+      and who carries their fee. We will open it as a pull request either way.</p>
+    <p class="rv lead"><b>If the answer is that they do not belong there, our contribution is the note rather than
+      the product — and we would rather hear that now than in six months.</b></p>
+    <div class="cite rv" style="margin-top:1.1rem">github.com/tjanker-creator/aegis402 &nbsp;·&nbsp; guard <b>769214187</b> &nbsp;·&nbsp; registry <b>769213326</b> &nbsp;·&nbsp; Algorand TestNet</div>
+  </div>
+
+  <div class="cap" id="cap"></div>
+  <div class="bar"><i id="prog"></i></div>
+</div>
+
+<script>
+const DATA = /*__DATA__*/;
+const CAPS = /*__CAPTURES__*/;
+const TEAL = /*__TEAL__*/;
+
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+
+const CHAPTER={hello:"the presenter",who:"forensics",unlock:"what the scheme allows",
+  title:"the problem",priorart:"prior art",where:"where the fix lives",agent:"a live agent",
+  agent2:"the decision",refused:"the refusal",group:"one atomic group",vault:"unskippable",
+  onchain:"no facilitator in the loop",fee:"the fee",attest:"provenance",precise:"precision",
+  proof:"verify without us",correction:"a correction",summary:"in four lines",close:"the ask"};
+
+/* ---------------------------------------------------------------------------
+   The reveal engine. Every scene staggers its own elements across its whole
+   segment instead of appearing at once — that is what keeps the screen alive
+   while a sentence is still being spoken.
+--------------------------------------------------------------------------- */
+const timers=[];
+const later=(fn,ms)=>{timers.push(setTimeout(fn,ms))};
+const clearAll=()=>{while(timers.length) clearTimeout(timers.pop())};
+
+function show(name,dur){
+  $$(".scene").forEach(e=>e.classList.toggle("on", e.dataset.scene===name));
+  $("#ch").innerHTML='<em>'+String(DATA.findIndex(d=>d.scene===name)+1).padStart(2,"0")+' / '+DATA.length+'</em> &nbsp;'+(CHAPTER[name]||"");
+  const sc=$('[data-scene="'+name+'"]');
+  const rv=[...sc.querySelectorAll(".rv")];
+  rv.forEach(e=>e.classList.remove("in"));
+  /* scenes that carry their own animation reveal faster and let the animation
+     hold the eye; scenes made only of text spread across nearly the whole
+     segment, so nothing sits finished and motionless while Brian talks. */
+  const frac = SCENES[name] ? 0.58 : 0.80;
+  const span=Math.max(1,dur*1000*frac), step=rv.length?span/rv.length:0;
+  rv.forEach((e,i)=>later(()=>e.classList.add("in"), 140+i*step));
+}
+
+function colour(line){
+  const e=document.createElement("div");
+  let cls="";
+  if(/\bPASS\b/.test(line)) cls="pass";
+  else if(/\bFAIL\b|THE MODEL DECIDED|went through/.test(line)) cls="fail";
+  else if(/THE CHAIN SAID NO|blocked on-chain|as expected|^6\/6/.test(line)) cls="pass";
+  else if(/^\s{6,}/.test(line)) cls="dim";
+  e.className=cls; e.textContent=line; return e;
+}
+/** types lines into a terminal spread across the WHOLE segment, so it is still
+    moving when the sentence about it ends */
+function typeInto(el, lines, ms){
+  el.innerHTML="";
+  const step=Math.max(45, ms/Math.max(lines.length,1));
+  lines.forEach((l,i)=>later(()=>{el.appendChild(colour(l)); el.scrollTop=el.scrollHeight;}, i*step));
+}
+
+const SCENES={
+  who: d=>{
+    const pre=$("#code");
+    pre.innerHTML=TEAL.map(l=>l.replace(/&/g,"&amp;").replace(/</g,"&lt;")).join("\n");
+    pre.style.transition="none"; pre.style.transform="translateY(0)";
+    later(()=>{ pre.style.transition="transform "+(d*1.15)+"s linear";
+                pre.style.transform="translateY(-"+Math.max(0,pre.scrollHeight-380)+"px)"; },120);
+  },
+  where: d=>{ const a=$("#colA"); a.classList.remove("taken"); later(()=>a.classList.add("taken"), d*1000*0.42); },
+  agent:  d=>typeInto($("#t-agent"),  CAPS.agent.slice(0,13), d*1000*0.92),
+  agent2: d=>typeInto($("#t-agent2"), CAPS.agent.slice(13,22), d*1000*0.88),
+  refused:d=>{ const s=$("#stamp"); s.classList.remove("hit"); void s.offsetWidth;
+               later(()=>s.classList.add("hit"), d*1000*0.16); },
+  group:  d=>{ const g=$("#grp"), r=$$("#grp .r");
+               g.classList.remove("dead"); r.forEach(x=>x.classList.remove("lit"));
+               r.forEach((x,i)=>later(()=>x.classList.add("lit"), d*1000*(0.10+i*0.13)));
+               later(()=>g.classList.add("dead"), d*1000*0.70); },
+  vault:  d=>{ const s=$$("#scan .s"); s.forEach(x=>x.className="s");
+               s.forEach((x,i)=>{ later(()=>x.classList.add("look"), d*1000*(0.34+i*0.12));
+                 later(()=>{x.classList.remove("look"); if(i===1)x.classList.add("hit");}, d*1000*(0.34+i*0.12+0.10)); }); },
+  onchain:d=>typeInto($("#t-onchain"), CAPS.onchain, d*1000*0.90),
+  fee:    d=>typeInto($("#t-fee"),     CAPS.fee,     d*1000*0.90),
+  attest: d=>{ const kids=[...$("#flow").children]; kids.forEach(k=>k.classList.remove("lit"));
+               kids.forEach((k,i)=>later(()=>k.classList.add("lit"), d*1000*(0.12+i*0.08))); },
+  correction: d=>{ const w=$("#wasline"); w.classList.remove("struck");
+               later(()=>w.classList.add("struck"), d*1000*0.38); },
+  proof:  d=>{ const r=$$("#tbl tr"); r.forEach(x=>x.classList.remove("lit"));
+               r.forEach((x,i)=>later(()=>x.classList.add("lit"), d*1000*(0.05+i*0.05))); },
+  summary:d=>{ const r=$$("#sum .r"); r.forEach(x=>x.classList.remove("lit"));
+               r.forEach((x,i)=>later(()=>x.classList.add("lit"), d*1000*(0.08+i*0.17))); },
+};
+
+/* base64 → Blob once; a multi-megabyte data: URI per segment froze the renderer */
+function blobUrl(b64){
+  const bin=atob(b64), buf=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) buf[i]=bin.charCodeAt(i);
+  return URL.createObjectURL(new Blob([buf],{type:"audio/mpeg"}));
+}
+
+const total=DATA.reduce((a,b)=>a+b.dur,0);
+let tracks=[], idx=0, elapsed=0, guard=0, watchdog=null, advanceCurrent=null;
+
+function prepare(){
+  tracks=DATA.map(s=>{const a=new Audio(); a.preload="auto"; a.src=blobUrl(s.audio); a.load(); return a;});
+  let acc=0;
+  DATA.slice(0,-1).forEach(s=>{acc+=s.dur;
+    const t=document.createElement("span"); t.className="tick";
+    t.style.left=(acc/total*100)+"%"; $(".bar").appendChild(t);});
+}
+
+function play(i){
+  idx=i; clearAll();
+  if(i>=DATA.length){
+    show("close",6); $("#prog").style.width="100%";
+    $("#cap").textContent="github.com/tjanker-creator/aegis402";
+    return;
+  }
+  const s=DATA[i], a=tracks[i], token=++guard;
+  $("#cap").textContent = s.text.length>155 ? s.text.slice(0,155)+"…" : s.text;
+
+  const advance=()=>{ if(token!==guard) return; clearTimeout(watchdog); elapsed+=s.dur; play(i+1); };
+  advanceCurrent=advance;
+
+  a.currentTime=0;
+  a.ontimeupdate=()=>{ $("#prog").style.width=((elapsed+a.currentTime)/total*100)+"%"; };
+  a.onended=advance;
+  a.onerror=()=>{ $("#cap").textContent="[audio error: "+s.id+"]"; advance(); };
+
+  /* Animation is armed by the FIRST FRAME OF AUDIO, never by the call to play():
+     a hidden or throttled tab defers media, and a visual running ahead of the
+     narration would desync the entire film. */
+  let armed=false;
+  const arm=()=>{ if(armed||token!==guard) return; armed=true;
+    clearTimeout(watchdog);
+    show(s.scene, s.dur);
+    if(SCENES[s.scene]) SCENES[s.scene](s.dur);
+    watchdog=setTimeout(advance,(s.dur-a.currentTime+4)*1000);
+  };
+  a.onplaying=arm;
+  clearTimeout(watchdog);
+  watchdog=setTimeout(()=>{                      // audio never started at all
+    if(token!==guard) return;
+    arm(); $("#cap").textContent="[no audio] "+$("#cap").textContent;
+    watchdog=setTimeout(advance,s.dur*1000);
+  }, 12000);
+
+  a.play().catch(e=>{ $("#cap").textContent="[playback blocked: "+e.name+"]"; });
+}
+
+const mmss=t=>Math.floor(t/60)+":"+String(Math.round(t%60)).padStart(2,"0");
+$("#startmeta").textContent="CLICK TO PLAY · "+mmss(total)+" · NARRATED";
+$("#start").addEventListener("click",()=>{ $("#start").style.display="none"; prepare(); play(0); });
+document.addEventListener("keydown",e=>{
+  const a=tracks[idx];
+  if(e.code==="Space"&&a){
+    e.preventDefault();
+    if(a.paused){ a.play();
+      watchdog=setTimeout(()=>advanceCurrent&&advanceCurrent(),(Math.max(0,DATA[idx].dur-a.currentTime)+4)*1000);
+    } else { a.pause(); clearTimeout(watchdog); }
+  }
+});
+</script>
+</body>
+</html>

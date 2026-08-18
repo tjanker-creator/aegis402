@@ -1,0 +1,29 @@
+{
+  "recipient": "0x0000000000000000000000000000000000000000",
+  "request": {
+    "url": "https://raw.githubusercontent.com/tjanker-creator/aegis402/main/.well-known/x402-payto.txt",
+    "header": "",
+    "method": "GET",
+    "body": ""
+  },
+  "reponseResolve": [
+    {
+      "keyName": "payTo",
+      "parseType": "",
+      "parsePath": "$"
+    }
+  ],
+  "data": "{\"payTo\":\"EQFRW7U57YY5N5ZMVN45PYFE6OPG7SATWZEJ5DCZO2WQLBGRSS7KIBGU6Y\"}",
+  "attConditions": "[{\"op\":\"REVEAL_STRING\",\"field\":\"$\",\"reveal_id\":\"payTo\"}]",
+  "timestamp": 1786647305197,
+  "additionParams": "{\"algorithmType\":\"proxytls\"}",
+  "attestors": [
+    {
+      "attestorAddr": "0xdb736b13e2f522dbe18b2015d0291e4b193d8ef6",
+      "url": "https://primuslabs.xyz"
+    }
+  ],
+  "signatures": [
+    "0x2f7c3b82f35487a00ff878773c2b7d57a2bbc0ee4778c1174936197cf94a75bd0733363a80a82173ec0a54a75f0c99cfb6831c3e09ce1f10f56a5f6b63cfa5ba1c"
+  ]
+}

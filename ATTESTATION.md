@@ -16,11 +16,17 @@ So an address earns its place by proof.
 3. The registry contract on Algorand **recomputes the exact digest the attestor
    signed**, recovers the signer with `ecdsa_pk_recover(Secp256k1)`, and records
    the address only if that signer is the allowlisted attestor.
-4. The guard then allows a payment only to an address in that registry.
+4. The guard is **not yet wired to that registry.** Its allowlist is still a
+   constant compiled into the approval program — one box read short of closing
+   the loop. Everything up to the box is deployed and verifiable; the last arrow
+   is honest future tense, and we say so in the pitch rather than letting you
+   find it.
 
 ```
-merchant domain ──TLS──> attestor ──signature──> Algorand registry ──box──> guard
-    publishes            witnesses               verifies on chain        enforces
+merchant domain ──TLS──> attestor ──signature──> Algorand registry ──box──┐
+    publishes            witnesses               verifies on chain        ┊
+                                                                          ┊ not wired yet
+                                                             guard ◀╌╌╌╌╌╌┘
 ```
 
 The digest is reproducible from published fields, which is what makes on-chain
@@ -60,8 +66,14 @@ node scripts/registry.mjs show       # what the registry holds
 ## What this does and does not prove
 
 **It proves** the address was served by that domain, witnessed by a party that
-is not us, and that the chain — not our code — decided whether to believe it.
-We are no longer the trust anchor for the allowlist.
+is not us, and that the chain — not our code — decided whether to believe the
+attestation. It is the machinery by which an address could earn its place on a
+list without our say-so.
+
+**It does not yet mean** we have stopped being the trust anchor for the guard's
+allowlist. That allowlist is a constant we chose and compiled in. Until the
+guard reads the registry box, the honest statement is that we built and verified
+the provenance path, not that we are using it.
 
 **It does not prove** the domain belongs to the merchant your agent meant to buy
 from. A lookalike domain, a lapsed-and-resquatted domain, or a mis-issued

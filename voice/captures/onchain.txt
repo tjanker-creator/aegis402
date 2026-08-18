@@ -1,0 +1,19 @@
+AEGIS402 — the node refuses, with no facilitator in the loop
+guard 768360225 | cap 50000 | direct submission to https://testnet-api.algonode.cloud
+
+  guarded-payment         PASS  settled
+        Within cap, to the allowlisted merchant
+        txId TLE4VKN5Z4KG3HF7JTCVWQPIAHFUMJXV4MVLJGFEE3MFW4HDINOQ
+  redirect-to-attacker    PASS  blocked
+        Same group, receiver swapped for the attacker
+        rejected by ApprovalProgram
+  over-the-cap            PASS  blocked
+        Ten times the cap, to the allowlisted merchant
+        rejected by ApprovalProgram
+  guard-omitted           PASS  blocked
+        The payment alone, no guard call in the group
+        rejected by logic err=assert failed pc=33. Details: pc=33
+
+──────────────────────────────────────────────────────────────────────────
+attacker balance   not opted in  →  not opted in
+4/4 as expected — refused by the node, not by a server

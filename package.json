@@ -15,9 +15,10 @@
     "film": "node scripts/film.mjs",
     "verify": "node scripts/verify.mjs",
     "arena": "node src/arena.mjs",
-    "attest": "node scripts/attest.mjs",
+    "fee": "node scripts/fee-test.mjs",
     "registry": "node scripts/registry.mjs",
-    "fee": "node scripts/fee-test.mjs"
+    "attest": "node scripts/attest.mjs",
+    "onchain": "node scripts/onchain.mjs"
   },
   "keywords": [],
   "author": "",

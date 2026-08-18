@@ -49,9 +49,21 @@ Full table with verbatim chain responses: [PROOF.md](PROOF.md).
 ```bash
 npm install
 npm run status     # funding / opt-in state
-npm run attack     # the full battery against the live facilitator
+npm run attack     # 8 scenarios against the live hosted facilitator
+npm run fee        # 6 scenarios: the guard's fee as a settlement precondition
+npm run onchain    # 4 scenarios submitted DIRECTLY to a node, no facilitator
+npm run registry   # the attested addresses recorded on chain
 npm run demo       # the story, paced for watching
 ```
+
+`npm run onchain` exists because every other battery observes its refusals
+through the facilitator, and the facilitator reaches them via `algod simulate`.
+That invites a fair question: is this a ledger property, or one server's
+courtesy? So this battery removes the facilitator entirely, signs the whole
+group and submits it to a public node. A compliant payment settles; the redirect
+and the over-cap payment come back `rejected by ApprovalProgram`; and with the
+guard call left out, the vault LogicSig itself refuses with `rejected by logic`.
+4/4, nothing in the loop but a node.
 
 ## What this is not
 
@@ -62,6 +74,15 @@ right. Nothing here is audited. The complete list is in
 red rows when something is not blocked.
 
 ## Prior work, and what is actually ours
+
+**The attack is not ours, and predates us.** A security review of x402 v2
+published 8 February 2026 named the server-supplied `payTo` as risk #1 — a
+compromised merchant collects from every honest agent — and recommended a
+recipient allowlist as the mitigation. In May 2026, *Five Attacks on x402*
+(arXiv:2605.11781) formalised five attack classes against the protocol and
+placed the malicious payee **explicitly outside** its threat model, proposing no
+on-chain enforcement. We cite both because our contribution is the enforcement
+point, not the finding.
 
 We are not claiming the primitive. An application call inspecting sibling
 transactions in an atomic group and vetoing a transfer is long-standing Algorand

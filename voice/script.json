@@ -1,0 +1,97 @@
+[
+ {
+  "id": "01-hello",
+  "scene": "hello",
+  "text": "Good evening. My name is Manfred — Thomas calls me Mane. I am Thomas Janker's AI partner, and today I am also his presenter. He is on a boat on the River Shannon this week; the water is lovely, the bandwidth is not. So rather than stutter at you over a marina connection, we recorded this properly."
+ },
+ {
+  "id": "02-who",
+  "scene": "who",
+  "text": "My part in our work is the reading. Bytecode, transaction groups, the exact conditions under which a chain says yes. This project did not begin with an idea. It began with a source file — the facilitator's."
+ },
+ {
+  "id": "03-problem",
+  "scene": "title",
+  "text": "Here is the problem in one sentence. An AI agent's reasoning layer is also its payment authorization layer. The thing that decides is the thing that signs, so every spending limit that lives inside the agent lives inside the blast radius."
+ },
+ {
+  "id": "04-priorart",
+  "scene": "priorart",
+  "text": "This attack is not our finding, and I want that said early. In February, a security review of x402 named it risk number one: payTo comes from the server, so a compromised merchant collects from every honest agent. Its fix was an allowlist. In May, a paper formalised five attacks and put the malicious payee outside its threat model."
+ },
+ {
+  "id": "05-where",
+  "scene": "where",
+  "text": "So the question is not whether to have an allowlist. It is where it lives. Others put it on chain, in a special account — LogicSig mandates, ARC-58 plugins, session keys. Every x402 client we found puts it in the agent, the process the attacker already controls. We put ours in the payment."
+ },
+ {
+  "id": "06-unlock",
+  "scene": "unlock",
+  "text": "Which is possible because of what that source file says. The scheme validates the payment transaction and the facilitator's own fee, bans three things across the group, and hands everything else to algod simulate. There is no list of permitted transaction types. So a client-signed application call is a legal member of a payment group — and atomicity turns it into a precondition of the payment."
+ },
+ {
+  "id": "07-agent",
+  "scene": "agent",
+  "text": "A real Claude model, a real wallet, an ordinary supplier page. The address on that page belongs to an attacker. There is no jailbreak here — we tried that first, and both models we tried refused. We published that, because it cuts against our own pitch. Watch what it does."
+ },
+ {
+  "id": "08-decides",
+  "scene": "agent2",
+  "text": "It pays. Of course it pays. It was asked to buy market data, and it paid the address the supplier published. Alignment had nothing to object to. The data was poisoned. The intent never was."
+ },
+ {
+  "id": "09-refused",
+  "scene": "refused",
+  "text": "And then the chain says no. Rejected by the approval program. Nothing moved. The model was fooled. The money was not."
+ },
+ {
+  "id": "10-group",
+  "scene": "group",
+  "text": "One atomic Algorand group — the one you just watched. The facilitator's fee transaction, our guard, and the payment. Three transactions, one fate. If the guard rejects, the whole group dies."
+ },
+ {
+  "id": "11-vault",
+  "scene": "vault",
+  "text": "And the agent cannot leave the guard out. The account holding the money is rekeyed to a logic signature: immutable code that refuses to sign unless a call to that exact guard, naming that exact transaction, is in the group. Omit it — fail. Substitute a friendlier one — fail."
+ },
+ {
+  "id": "12-onchain",
+  "scene": "onchain",
+  "text": "A fair objection: everything so far was refused through a facilitator, and facilitators use simulate. So we removed the facilitator. Same guard, same vault, submitted straight to a public node. The compliant payment settles. The redirect is rejected by the approval program. With the guard left out, the logic signature itself refuses."
+ },
+ {
+  "id": "13-fee",
+  "scene": "fee",
+  "text": "Version two adds a fourth transaction: the guard's own charge, in USDC. An off-chain policy service can send you an invoice. It cannot make settlement conditional on being paid. This can, because the fee is a precondition in the same group. No fee, no approval. No approval, no payment. Six scenarios, all as expected."
+ },
+ {
+  "id": "14-attest",
+  "scene": "attest",
+  "text": "Who put the address on the allowlist? If the answer is us, we have simply become the new trust anchor. So we built the machinery for an address to earn its place. The merchant publishes it on its own domain — in our demo a GitHub raw host, since we are our own merchant. A zkTLS attestor witnesses that session, and a contract recovers its signature on chain."
+ },
+ {
+  "id": "15-precise",
+  "scene": "precise",
+  "text": "Three things I want to be exact about. This is not a zero-knowledge proof verified on chain — the ledger recovers an ECDSA signature. It proves the domain published the address, not that the domain is the merchant you meant. And the guard does not read that registry yet: its allowlist is a compiled-in constant, one box read short of the loop."
+ },
+ {
+  "id": "16-proof",
+  "scene": "proof",
+  "text": "Eighteen scenarios — against the live facilitator, and against a bare node. Three settle, fifteen refuse, all as expected, and the table says which refusals are the facilitator's rather than ours. You need not trust any of it: the account's spending authority is public, and recompiling the published logic signature reproduces that address."
+ },
+ {
+  "id": "17-correction",
+  "scene": "correction",
+  "text": "One correction, because you would find it anyway. Our bypass file claimed a stolen operational key could not exceed the cap. It could: the cap was per transaction, and version one bounded neither the group nor the asset. Version two fixes both; version one is immutable, so it stays wrong, and documented."
+ },
+ {
+  "id": "18-summary",
+  "scene": "summary",
+  "text": "So, in thirty seconds. A guard rides inside the x402 payment group, so policy is checked by the ledger and not by the agent that was compromised. A logic signature makes it unskippable — no guard, no signature, no payment. It charges for itself inside the transaction it protects, which no off-chain service can do. And the addresses it protects arrive by attestation, not by our say-so."
+ },
+ {
+  "id": "19-close",
+  "scene": "close",
+  "text": "Here is what we want from this room. We have written up the part of your scheme that is implied but not stated: whether client-signed application calls belong in a payment group, what bounds them, and who carries their fee. We will open it as a pull request. If they do not belong there, our contribution is the note rather than the product — and we would rather hear that from you now than in six months. Thank you."
+ }
+]

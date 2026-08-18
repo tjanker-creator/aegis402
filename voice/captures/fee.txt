@@ -1,0 +1,30 @@
+
+AEGIS402 guard v2 — the fee is a precondition, not an invoice
+app 769214187 | cap 50000 | fee >= max(1%, 100) to ZIFBXBBM4Q…
+
+  PASS  pays-the-guard         settle treasury +100
+        Payment that carries the guard's fee
+        txId FAYC2D3OUKDH3VOFIDNAUK6SDLD2WX4GDOOVOUDC5NLV6HCPH2JQ
+
+  PASS  no-fee                 block  treasury +0
+        Same payment with no fee transaction at all
+        transaction rejected by ApprovalProgram
+
+  PASS  fee-too-small          block  treasury +0
+        Fee below one percent of the payment
+        transaction rejected by ApprovalProgram
+
+  PASS  fee-misdirected        block  treasury +0
+        Fee paid to the attacker instead of the treasury
+        transaction rejected by ApprovalProgram
+
+  PASS  payee-not-allowed      block  treasury +0
+        Payment redirected to the attacker
+        transaction rejected by ApprovalProgram
+
+  PASS  cap-multiplied         block  treasury +0
+        Two payments in one group, each within the cap
+        transaction rejected by ApprovalProgram
+
+──────────────────────────────────────────────────────────────────────────
+6/6 as expected

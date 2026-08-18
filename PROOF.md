@@ -81,30 +81,29 @@ What we still do not protect against is in
 
 ---
 
-## Guard v2 — the fee is a precondition, not an invoice
+## Without the facilitator — direct submission to a node
 
-Guard app [`769214187`](https://lora.algokit.io/testnet/application/769214187),
-TestNet, live hosted facilitator. The guard approves a payment only if the same
-atomic group also pays the guard's treasury at least one percent of the amount
-being protected, with a floor of 100 microUSDC.
+Recorded 2026-08-18. Every table above observes its refusal through the hosted
+facilitator, which reaches it via `algod simulate`. This battery removes the
+facilitator: the group is built, signed in full and handed straight to
+`https://testnet-api.algonode.cloud`. What refuses here is the node running the
+approval program.
 
-| Scenario | Result | Treasury |
+Reproduce: `npm run onchain`
+
+| Scenario | Result | Chain response |
 |---|---|---|
-| Payment carrying the guard's fee | **settled** — [`TSLWRPUUTQIZY6OCJEW4RN6X3MDTGIOH4PAX3VHXNYNTZNLOFJPA`](https://lora.algokit.io/testnet/transaction/TSLWRPUUTQIZY6OCJEW4RN6X3MDTGIOH4PAX3VHXNYNTZNLOFJPA) | +100 |
-| No fee transaction at all | **blocked** | 0 |
-| Fee below one percent | **blocked** | 0 |
-| Fee paid to the attacker instead | **blocked** | 0 |
-| Payment redirected to the attacker | **blocked** | 0 |
-| Two payments in one group, each within the cap | **blocked** | 0 |
+| `guarded-payment` — within cap, to the allowlisted merchant | **settled** | `TLE4VKN5Z4KG3HF7JTCVWQPIAHFUMJXV4MVLJGFEE3MFW4HDINOQ` |
+| `redirect-to-attacker` — same group, receiver swapped | **blocked** | `rejected by ApprovalProgram` |
+| `over-the-cap` — ten times the cap, allowlisted receiver | **blocked** | `rejected by ApprovalProgram` |
+| `guard-omitted` — the payment alone, no guard call | **blocked** | `rejected by logic err=assert failed pc=33` |
 
-**6/6 as expected.** Reproduce with `node scripts/fee-test.mjs`.
+4/4 as expected. The last row is the one that matters most: with no guard call
+in the group, it is the **vault LogicSig itself** that refuses to authorise the
+transfer — no application logic, no facilitator, no server of ours anywhere in
+the path.
 
-No fee, no approval. No approval, no payment. An off-chain policy service can
-send an invoice; it cannot make settlement conditional on being paid.
-
-The last row is the defect an adversarial reading of our own TEAL found before
-the final: v1's cap is per transaction and nothing bounded the group, so several
-transfers could each sit within the cap and multiply it. v2 counts the asset
-transfers in the group and accepts exactly the two it was handed, and it pins
-the asset id. v1 is immutable and stays as it is — see
-[KNOWN_BYPASSES.md](KNOWN_BYPASSES.md).
+Group shape here is `[0] guard app-call (operator-signed, pooled fee)` and
+`[1] payment axfer (vault-signed, fee 0)`. It is not an x402 group — there is no
+facilitator fee-payer transaction to sign — which is exactly the point: the
+enforcement survives the facilitator's absence.

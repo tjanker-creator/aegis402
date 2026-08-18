@@ -57,28 +57,20 @@ The TEAL is small and deliberately boring, but it has had no external review.
 Everything here runs on TestNet with test funds. Do not put real money behind it
 in this state.
 
-## 6. Operator key compromise is bounded by the receiver, not by the amount
+## 6. Operator key compromise degrades to policy
 
-An earlier version of this file said a stolen operational key "cannot exceed the
-cap". **That was wrong, and the correction matters more than the original
-claim.**
+If the operational key leaks, the attacker can request guard approval — that is
+all. They cannot pay a non-allowlisted address, omit the guard, or substitute a
+friendlier one.
 
-The guard v1 cap is enforced per *transaction*, and nothing in `policy.teal`
-constrains the size or shape of the group. So a holder of the operational key
-can build one group containing several transfers, each individually within the
-cap, each with its own guard call naming its own index — and spend a multiple of
-the cap in a single atomic group, repeatable every round. Guard v1 also never
-pins the asset id, so its cap is denominated in units of whatever asset is being
-transferred.
+They **can** exceed the cap, and we had this wrong here until we re-read our own
+TEAL before the final. The v1 cap is enforced per transaction, and neither the
+guard nor `vault.teal.tmpl` bounds the group: an attacker pairs each additional
+transfer with its own guard call naming its own index, and an Algorand group
+holds sixteen transactions — roughly seven such pairs, so roughly seven times the
+cap in one group. v1 is immutable, so this stays true of v1 and stays written
+down. `policy2.teal` (app `769214187`) counts every asset transfer in the group,
+requires exactly one payment and one fee, and pins the asset id.
 
-The true bound on a stolen operational key is therefore: **funds can only go to
-the allowlisted receiver.** That is still the property we care about most — the
-money can only move somewhere chosen while sober — but it is not a spending
-limit, and we will not call it one.
-
-Guard v2 fixes both: it counts the asset transfers in the group and accepts
-exactly the two it was handed, and it pins the asset id. Guard v1 is immutable
-and cannot be patched, which is the cost of immutability and is stated here
-rather than quietly fixed.
-
-Found by adversarially reading our own TEAL before the final rather than after.
+The real bound on a stolen operational key is therefore **the allowlisted
+receiver, not the amount** — which is the point, but it is not nothing.
