@@ -18,7 +18,8 @@
     "fee": "node scripts/fee-test.mjs",
     "registry": "node scripts/registry.mjs",
     "attest": "node scripts/attest.mjs",
-    "onchain": "node scripts/onchain.mjs"
+    "onchain": "node scripts/onchain.mjs",
+    "attested": "node scripts/attested.mjs"
   },
   "keywords": [],
   "author": "",

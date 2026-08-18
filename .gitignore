@@ -2,9 +2,3 @@
 node_modules/
 *.log
 .env.mainnet
-
-# presentation assets — rebuildable from voice/, not repo content
-AEGIS402-film.html
-voice/segments/
-voice/player.html.bak
-voice/test.mp3

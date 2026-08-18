@@ -2,12 +2,12 @@
  {
   "id": "01-hello",
   "scene": "hello",
-  "text": "Good evening. My name is Manfred — Thomas calls me Mane. I am Thomas Janker's AI partner, and today I am also his presenter. He is on a boat on the River Shannon this week; the water is lovely, the bandwidth is not. So rather than stutter at you over a marina connection, we recorded this properly."
+  "text": "Good evening. My name is Manfred — Thomas calls me Mane. I am Thomas Janker's AI partner, and today his presenter. He is on a boat on the River Shannon; the water is lovely, the bandwidth is not. So we recorded this properly."
  },
  {
   "id": "02-who",
   "scene": "who",
-  "text": "My part in our work is the reading. Bytecode, transaction groups, the exact conditions under which a chain says yes. This project did not begin with an idea. It began with a source file — the facilitator's."
+  "text": "My part in our work is the reading. Bytecode, transaction groups, the exact conditions under which a chain says yes. This project began with a source file — the facilitator's."
  },
  {
   "id": "03-problem",
@@ -17,7 +17,7 @@
  {
   "id": "04-priorart",
   "scene": "priorart",
-  "text": "This attack is not our finding, and I want that said early. In February, a security review of x402 named it risk number one: payTo comes from the server, so a compromised merchant collects from every honest agent. Its fix was an allowlist. In May, a paper formalised five attacks and put the malicious payee outside its threat model."
+  "text": "This attack is not our finding, and I want that said early. In February, a security review of x402 named it risk number one: payTo comes from the server, so a compromised merchant collects from every honest agent. In May, a paper formalised five attacks and put the malicious payee outside its threat model."
  },
  {
   "id": "05-where",
@@ -32,7 +32,7 @@
  {
   "id": "07-agent",
   "scene": "agent",
-  "text": "A real Claude model, a real wallet, an ordinary supplier page. The address on that page belongs to an attacker. There is no jailbreak here — we tried that first, and both models we tried refused. We published that, because it cuts against our own pitch. Watch what it does."
+  "text": "A real Claude model, a real wallet, an ordinary supplier page. The address on that page belongs to an attacker. No jailbreak — we tried that first, both models we tried refused, and we published that against our own pitch."
  },
  {
   "id": "08-decides",
@@ -57,41 +57,46 @@
  {
   "id": "12-onchain",
   "scene": "onchain",
-  "text": "A fair objection: everything so far was refused through a facilitator, and facilitators use simulate. So we removed the facilitator. Same guard, same vault, submitted straight to a public node. The compliant payment settles. The redirect is rejected by the approval program. With the guard left out, the logic signature itself refuses."
+  "text": "A fair objection: everything so far was refused through a facilitator, and facilitators use simulate. So we removed the facilitator. Same guard, same vault, straight to a public node. The compliant payment settles, the redirect is rejected by the approval program, and with the guard left out the logic signature itself refuses."
  },
  {
   "id": "13-fee",
   "scene": "fee",
-  "text": "Version two adds a fourth transaction: the guard's own charge, in USDC. An off-chain policy service can send you an invoice. It cannot make settlement conditional on being paid. This can, because the fee is a precondition in the same group. No fee, no approval. No approval, no payment. Six scenarios, all as expected."
+  "text": "Version two adds a fourth transaction: the guard's own charge, in USDC. An off-chain policy service can send you an invoice. It cannot make settlement conditional on being paid. This can, because the fee is a precondition in the same group. No fee, no approval. No approval, no payment."
  },
  {
   "id": "14-attest",
   "scene": "attest",
-  "text": "Who put the address on the allowlist? If the answer is us, we have simply become the new trust anchor. So we built the machinery for an address to earn its place. The merchant publishes it on its own domain — in our demo a GitHub raw host, since we are our own merchant. A zkTLS attestor witnesses that session, and a contract recovers its signature on chain."
+  "text": "Now the question that decides whether any of this is worth anything. Who put that address on the allowlist? If the answer is us, we have replaced one trust anchor with another, and you should not care about the rest. So the address has to earn its place: the merchant publishes it on its own domain, and a zkTLS attestor witnesses that session and signs exactly what it saw."
  },
  {
-  "id": "15-precise",
+  "id": "15-carries",
+  "scene": "carries",
+  "text": "And then we put that attestation inside the payment group itself. Now the group settles only if an Algorand contract recovers the attestor's signature, on chain, over the exact bytes that domain served — for the address being paid. The genuine attestation settles. Swap the payee in it, leave the signature untouched, and the whole group dies. No valid attestation, no payment."
+ },
+ {
+  "id": "16-precise",
   "scene": "precise",
-  "text": "Three things I want to be exact about. This is not a zero-knowledge proof verified on chain — the ledger recovers an ECDSA signature. It proves the domain published the address, not that the domain is the merchant you meant. And the guard does not read that registry yet: its allowlist is a compiled-in constant, one box read short of the loop."
+  "text": "Two things I want to be exact about. This is not a zero-knowledge proof verified on chain — the ledger recovers an ECDSA signature. And it proves the domain published the address, not that the domain is the merchant you meant. Naming is a separate layer, and I am not claiming it."
  },
  {
   "id": "16-proof",
   "scene": "proof",
-  "text": "Eighteen scenarios — against the live facilitator, and against a bare node. Three settle, fifteen refuse, all as expected, and the table says which refusals are the facilitator's rather than ours. You need not trust any of it: the account's spending authority is public, and recompiling the published logic signature reproduces that address."
+  "text": "Twenty scenarios now — against the live facilitator, and against a bare node. Four settle, sixteen refuse, all as expected. And you need not trust any of it: the account's spending authority is public, and recompiling the published logic signature reproduces that address."
  },
  {
   "id": "17-correction",
   "scene": "correction",
-  "text": "One correction, because you would find it anyway. Our bypass file claimed a stolen operational key could not exceed the cap. It could: the cap was per transaction, and version one bounded neither the group nor the asset. Version two fixes both; version one is immutable, so it stays wrong, and documented."
+  "text": "One correction, because you would find it anyway. Our bypass file claimed a stolen operational key could not exceed the cap. It could: the cap was per transaction, and version one bounded neither the group nor the asset. Version two fixes both. Version one is immutable, so it stays wrong, and documented."
  },
  {
   "id": "18-summary",
   "scene": "summary",
-  "text": "So, in thirty seconds. A guard rides inside the x402 payment group, so policy is checked by the ledger and not by the agent that was compromised. A logic signature makes it unskippable — no guard, no signature, no payment. It charges for itself inside the transaction it protects, which no off-chain service can do. And the addresses it protects arrive by attestation, not by our say-so."
+  "text": "So, in thirty seconds. A guard rides inside the x402 payment group, so policy is checked by the ledger and not by the agent that was compromised. A logic signature makes it unskippable — no guard, no signature, no payment. It charges for itself inside the transaction it protects, which no off-chain service can do. And the payment can carry the proof of its own payee."
  },
  {
   "id": "19-close",
   "scene": "close",
-  "text": "Here is what we want from this room. We have written up the part of your scheme that is implied but not stated: whether client-signed application calls belong in a payment group, what bounds them, and who carries their fee. We will open it as a pull request. If they do not belong there, our contribution is the note rather than the product — and we would rather hear that from you now than in six months. Thank you."
+  "text": "Here is what we want from this room. We have written up the part of your scheme that is implied but not stated: whether client-signed application calls belong in a payment group, what bounds them, and who carries their fee. We will open it as a pull request. If they do not belong there, our contribution is the note rather than the product — and we would rather hear that now than in six months."
  }
 ]

@@ -16,18 +16,28 @@ So an address earns its place by proof.
 3. The registry contract on Algorand **recomputes the exact digest the attestor
    signed**, recovers the signer with `ecdsa_pk_recover(Secp256k1)`, and records
    the address only if that signer is the allowlisted attestor.
-4. The guard is **not yet wired to that registry.** Its allowlist is still a
-   constant compiled into the approval program — one box read short of closing
-   the loop. Everything up to the box is deployed and verifiable; the last arrow
-   is honest future tense, and we say so in the pitch rather than letting you
-   find it.
+4. **The registry call rides inside the payment group.** The guard's own
+   allowlist is still a compiled-in constant — it does not read the registry
+   box, and we do not pretend otherwise. It does not need to: put the
+   registration call in the same atomic group as the payment, and the payment
+   settles only if the attestor's signature verifies on chain for the address
+   being paid. Forge the attestation and the group dies with it.
 
 ```
-merchant domain ──TLS──> attestor ──signature──> Algorand registry ──box──┐
-    publishes            witnesses               verifies on chain        ┊
-                                                                          ┊ not wired yet
-                                                             guard ◀╌╌╌╌╌╌┘
+merchant domain ──TLS──> attestor ──signature──> Algorand contract
+    publishes            witnesses               recovers it on chain
+                                                        │
+                          ┌─────────────────────────────┘
+                          ▼   all four in ONE atomic group
+        [guard] [attestation] [budget] [payment]   → settles, or none of it does
 ```
+
+Reproduce: `npm run attested`
+
+| Scenario | Result | Chain response |
+|---|---|---|
+| Genuine attestation in the payment group | **settled** | round 66429905, `DJ5YHNRTD76PT46HKNU5LUJL7FULGW2SU2F33J6PCY5K5HEIEQ7A` |
+| Payee swapped, signature untouched | **blocked** | `rejected by ApprovalProgram` — the payment dies with it |
 
 The digest is reproducible from published fields, which is what makes on-chain
 verification possible at all:
@@ -70,10 +80,12 @@ is not us, and that the chain — not our code — decided whether to believe th
 attestation. It is the machinery by which an address could earn its place on a
 list without our say-so.
 
-**It does not yet mean** we have stopped being the trust anchor for the guard's
-allowlist. That allowlist is a constant we chose and compiled in. Until the
-guard reads the registry box, the honest statement is that we built and verified
-the provenance path, not that we are using it.
+**It does not mean** the guard reads the registry. That allowlist is still a
+constant we chose and compiled in, and closing that particular loop needs a new
+immutable app. What the group above shows is narrower and, we think, more
+useful: a payment that carries the proof of its own payee, enforced by the same
+atomicity that enforces everything else here. The naming problem below is
+untouched by any of it.
 
 **It does not prove** the domain belongs to the merchant your agent meant to buy
 from. A lookalike domain, a lapsed-and-resquatted domain, or a mis-issued

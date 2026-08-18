@@ -107,3 +107,31 @@ Group shape here is `[0] guard app-call (operator-signed, pooled fee)` and
 `[1] payment axfer (vault-signed, fee 0)`. It is not an x402 group — there is no
 facilitator fee-payer transaction to sign — which is exactly the point: the
 enforcement survives the facilitator's absence.
+
+---
+
+## The payment carries the proof of its own payee
+
+Recorded 2026-08-18. The guard enforces an allowlist; the obvious objection is
+who put the address on it. This battery answers it inside the payment group: the
+zkTLS registry call is bundled with the guard and the transfer, so the group
+settles only if an Algorand contract recovers the Primus attestor's secp256k1
+signature over the exact bytes the merchant's domain served — naming the very
+address being paid.
+
+Reproduce: `npm run attested`
+
+| Scenario | Result | Chain response |
+|---|---|---|
+| `attested-payment` — genuine attestation in the group | **settled** | round 66429905 · `DJ5YHNRTD76PT46HKNU5LUJL7FULGW2SU2F33J6PCY5K5HEIEQ7A` |
+| `forged-attestation` — payee swapped, signature untouched | **blocked** | `rejected by ApprovalProgram` |
+
+2/2. Group shape: `[0] guard app-call` · `[1] registry app-call (12 args, box
+ref)` · `[2..4] budget pads` · `[5] payment axfer (vault-signed, fee 0)`. The
+pads exist only to pool opcode budget for `ecdsa_pk_recover`, which costs 2000
+units against a 700-unit per-call allowance.
+
+Attested address `GABQRET4USJ5PJM2EUV7PV6L64O7AP3E2XLS3HMUXFIMPMQLDFTFAMDWOM`
+is the same address the guard allowlists — both facts are public and checkable.
+
+**Running total across all batteries: 20 scenarios, 4 settle, 16 refuse.**

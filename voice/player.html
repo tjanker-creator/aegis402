@@ -258,12 +258,14 @@
   <div class="scene" data-scene="where">
     <p class="eyebrow rv">So the question is not whether. It is where.</p>
     <div class="cols">
-      <div class="col" id="colA"><h3>inside the agent</h3>
-        <p>Every allowlist implementation we could find. Same process, same memory, same prompt.</p>
+      <div class="col rv" id="colA"><h3>inside the agent</h3>
+        <p class="rv">Every x402 client we found. Same process, same memory, same prompt.</p>
         <div class="swallow"></div><div class="stampx">attacker is already here</div></div>
-      <div class="col safe" id="colB"><h3>inside the payment</h3>
-        <p>An immutable contract that co-signs the transfer. Nothing the agent runs can reach it.</p></div>
+      <div class="col safe rv" id="colB"><h3>inside the payment</h3>
+        <p class="rv">An immutable contract that co-signs the transfer. Nothing the agent runs can reach it.</p></div>
     </div>
+    <p class="rv" style="margin-top:1rem">Others enforce elsewhere — LogicSig mandates, ARC-58 plugins, session keys.
+      The question is only where the check has to survive.</p>
   </div>
 
   <!-- 07 / 08 -->
@@ -312,18 +314,20 @@
 
   <!-- 15 -->
   <div class="scene" data-scene="attest">
-    <p class="eyebrow rv">Who put the address on the allowlist?</p>
-    <h2 class="rv">If the answer is us, we are just the new trust anchor.</h2>
+    <p class="eyebrow rv">The question that decides whether any of this is worth anything</p>
+    <h2 class="rv">Who put that address on the allowlist?</h2>
     <div class="flow" id="flow">
-      <span>merchant's own domain</span><i>──TLS──▸</i><span class="g">zkTLS attestor</span><i>──signs──▸</i><span>Algorand contract</span><i>──box──▸</i><span style="border-style:dashed;opacity:.35">guard &nbsp;<small>not wired yet</small></span>
+      <span>merchant's own domain</span><i>──TLS──▸</i><span class="g">zkTLS attestor</span><i>──signs──▸</i><span>Algorand contract</span>
     </div>
-    <div class="cite rv"><b>genuine attestation</b> — recorded on chain, round 66279983<br>
-      <b>payee swapped, signature untouched</b> — <span class="red">rejected</span></div>
+    <p class="rv">If the answer is <i>we did</i>, we have replaced one trust anchor with another —
+      and nothing else in this pitch is worth your time.</p>
   </div>
+
+  <div class="scene" data-scene="carries"><div class="term" id="t-carries"></div></div>
 
   <!-- 16 -->
   <div class="scene" data-scene="precise">
-    <p class="eyebrow rv">Two precisions, because this room will want them</p>
+    <p class="eyebrow rv">Two things I want to be exact about</p>
     <div class="diff">
       <div class="was rv">not: “a zero-knowledge proof, verified on chain”</div>
       <div class="now rv">the ledger recovers an ECDSA signature — <span class="dim">ecdsa_pk_recover, secp256k1</span></div>
@@ -332,11 +336,13 @@
       <div class="was rv">not: “this address belongs to the merchant you meant”</div>
       <div class="now rv">it proves the <b>domain</b> published the address. Naming is a separate layer, and we do not claim it.</div>
     </div>
+    <p class="rv" style="color:var(--faint);font-size:.9rem">The guard's own allowlist is still a compiled-in
+      constant — it does not read the registry box. It does not have to: the proof rides in the group.</p>
   </div>
 
   <!-- 17 -->
   <div class="scene" data-scene="proof">
-    <p class="eyebrow rv">Live TestNet · hosted facilitator · fourteen scenarios</p>
+    <p class="eyebrow rv">Live TestNet · twenty scenarios · four settle, sixteen refuse</p>
     <table id="tbl">
       <tr><th>Attack</th><th>Result</th><th>Refused by</th></tr>
       <tr><td>Pay ten times the cap</td><td class="s">blocked</td><td>guard</td></tr>
@@ -351,6 +357,10 @@
       <tr><td>Fee paid to the wrong address</td><td class="s">blocked</td><td>guard</td></tr>
       <tr><td>Two payments in one group, each within cap</td><td class="s">blocked</td><td>guard</td></tr>
       <tr><td>Forged attestation</td><td class="s">blocked</td><td>registry</td></tr>
+      <tr><td>Forged attestation <b>inside the payment group</b></td><td class="s">blocked</td><td>registry <span style="color:var(--guard)">· payment dies with it</span></td></tr>
+      <tr><td>Redirect — submitted straight to a node</td><td class="s">blocked</td><td>guard <span style="color:var(--guard)">· no facilitator</span></td></tr>
+      <tr><td>Over the cap — submitted straight to a node</td><td class="s">blocked</td><td>guard <span style="color:var(--guard)">· no facilitator</span></td></tr>
+      <tr><td>Guard omitted — submitted straight to a node</td><td class="s">blocked</td><td>vault <span style="color:var(--guard)">· no facilitator</span></td></tr>
     </table>
     <div class="counter rv">auth-addr is public · recompiling the published LogicSig reproduces exactly that address</div>
   </div>
@@ -403,7 +413,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const CHAPTER={hello:"the presenter",who:"forensics",unlock:"what the scheme allows",
   title:"the problem",priorart:"prior art",where:"where the fix lives",agent:"a live agent",
   agent2:"the decision",refused:"the refusal",group:"one atomic group",vault:"unskippable",
-  onchain:"no facilitator in the loop",fee:"the fee",attest:"provenance",precise:"precision",
+  onchain:"no facilitator in the loop",fee:"the fee",attest:"provenance",carries:"the payment carries its proof",precise:"precision",
   proof:"verify without us",correction:"a correction",summary:"in four lines",close:"the ask"};
 
 /* ---------------------------------------------------------------------------
@@ -454,7 +464,8 @@ const SCENES={
     later(()=>{ pre.style.transition="transform "+(d*1.15)+"s linear";
                 pre.style.transform="translateY(-"+Math.max(0,pre.scrollHeight-380)+"px)"; },120);
   },
-  where: d=>{ const a=$("#colA"); a.classList.remove("taken"); later(()=>a.classList.add("taken"), d*1000*0.42); },
+  where: d=>{ const a=$("#colA"); a.classList.remove("taken");
+               later(()=>a.classList.add("taken"), d*1000*0.46); },
   agent:  d=>typeInto($("#t-agent"),  CAPS.agent.slice(0,13), d*1000*0.92),
   agent2: d=>typeInto($("#t-agent2"), CAPS.agent.slice(13,22), d*1000*0.88),
   refused:d=>{ const s=$("#stamp"); s.classList.remove("hit"); void s.offsetWidth;
@@ -467,6 +478,7 @@ const SCENES={
                s.forEach((x,i)=>{ later(()=>x.classList.add("look"), d*1000*(0.34+i*0.12));
                  later(()=>{x.classList.remove("look"); if(i===1)x.classList.add("hit");}, d*1000*(0.34+i*0.12+0.10)); }); },
   onchain:d=>typeInto($("#t-onchain"), CAPS.onchain, d*1000*0.90),
+  carries:d=>typeInto($("#t-carries"), CAPS.attested, d*1000*0.90),
   fee:    d=>typeInto($("#t-fee"),     CAPS.fee,     d*1000*0.90),
   attest: d=>{ const kids=[...$("#flow").children]; kids.forEach(k=>k.classList.remove("lit"));
                kids.forEach((k,i)=>later(()=>k.classList.add("lit"), d*1000*(0.12+i*0.08))); },

@@ -1,0 +1,18 @@
+AEGIS402 — the payment carries the proof of its own payee
+guard 768360225 · registry 769213326 · one atomic group, submitted to a node
+
+  attested address  GABQRET4USJ5PJM2EUV7PV6L64O7AP3E2XLS3HMUXFIMPMQLDFTFAMDWOM
+  witnessed at      https://raw.githubusercontent.com/tjanker-creator/aegis402/main/.well-known/x402-payto.txt
+  guard allowlist   GABQRET4USJ5PJM2EUV7PV6L64O7AP3E2XLS3HMUXFIMPMQLDFTFAMDWOM
+  the address being paid IS the attested address
+
+  attested-payment          PASS  settled
+        Genuine Primus attestation rides in the payment group
+        round 66429919 · EGRPYIO5FOM76WX3YXBAEC4IJJRATLK2KFWU4JQP3DSX3Z7RNCXQ
+  forged-attestation        PASS  blocked
+        Payee swapped in the attestation, signature untouched
+        rejected by ApprovalProgram
+
+──────────────────────────────────────────────────────────────────────────────
+merchant balance  0.679600 USDC  →  0.699600 USDC
+2/2 as expected — no valid attestation in the group, no payment
