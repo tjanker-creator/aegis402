@@ -1,0 +1,163 @@
+#pragma version 10
+// ============================================================================
+// AEGIS402 — GUARD v3  (IMMUTABLE)
+//
+// v1 asked: is this payment within the cap, and to an allowlisted address?
+// v3 asks one more question, and refuses without an answer:
+//
+//     WHERE DID THAT ADDRESS COME FROM?
+//
+// It requires a call to the zkTLS registry to be present IN THE SAME ATOMIC
+// GROUP, naming the same payee. The registry independently recovers a Primus
+// attestor's secp256k1 signature over the exact bytes the merchant's domain
+// served. If that attestation is forged the registry rejects; if it is simply
+// left out, THIS program rejects. Either way the group dies and the payment
+// cannot exist.
+//
+// The difference from v1 is one word: the provenance proof is no longer
+// optional. A payment that cannot show where its payee came from does not
+// settle.
+//
+// Compiled with:
+//   CAP_MICRO         per-transaction ceiling
+//   ALLOWED_RECEIVER  the payee, as an address
+//   GUARDED_ASSET     the asset id (v1 never pinned this — that was a real bug)
+//   REGISTRY_APP_ID   the attestation contract that must be in the group
+//   ATTESTED_TEXT     the same payee, as the 58-char text the attestor witnessed
+// ============================================================================
+
+txn ApplicationID
+int 0
+==
+bnz allow
+
+// --- immutable: no update, no delete ------------------------------------
+txn OnCompletion
+int NoOp
+==
+bz reject
+
+// --- app arg 0 = the index of the payment we are guarding ---------------
+txn NumAppArgs
+int 1
+==
+bz reject
+txna ApplicationArgs 0
+btoi
+store 0
+
+// --- the guarded transaction must be an asset transfer ------------------
+load 0
+gtxns TypeEnum
+int axfer
+==
+bz reject
+
+// --- pin the asset (v1 did not, so its cap was denominated in whatever) --
+load 0
+gtxns XferAsset
+int GUARDED_ASSET
+==
+bz reject
+
+// --- cap ----------------------------------------------------------------
+load 0
+gtxns AssetAmount
+int CAP_MICRO
+<=
+bz reject
+
+// --- allowlist ----------------------------------------------------------
+load 0
+gtxns AssetReceiver
+addr ALLOWED_RECEIVER
+==
+bz reject
+
+// --- bound the group: exactly one asset transfer, so the cap cannot be
+//     multiplied by pairing several transfers with several guard calls ----
+int 0
+store 1          // loop counter
+int 0
+store 2          // axfer count
+
+count:
+  load 1
+  global GroupSize
+  <
+  bz counted
+  load 1
+  gtxns TypeEnum
+  int axfer
+  ==
+  bz notxfer
+  load 2
+  int 1
+  +
+  store 2
+notxfer:
+  load 1
+  int 1
+  +
+  store 1
+  b count
+counted:
+load 2
+int 1
+==
+bz reject
+
+// --- THE NEW CONDITION --------------------------------------------------
+// A call to the registry must be present in this group, it must be a
+// "register" call, and the address it attests must be the address we allow.
+int 0
+store 1          // loop counter
+int 0
+store 3          // found flag
+
+scan:
+  load 1
+  global GroupSize
+  <
+  bz scanned
+  load 1
+  gtxns TypeEnum
+  int appl
+  ==
+  bz next
+  load 1
+  gtxns ApplicationID
+  int REGISTRY_APP_ID
+  ==
+  bz next
+  load 1
+  gtxnsa ApplicationArgs 0
+  byte "register"
+  ==
+  bz next
+  // args[7] is the attested document: {"payTo":"<58 chars>"}
+  load 1
+  gtxnsa ApplicationArgs 7
+  extract 10 58
+  byte "ATTESTED_TEXT"
+  ==
+  bz next
+  int 1
+  store 3
+next:
+  load 1
+  int 1
+  +
+  store 1
+  b scan
+scanned:
+load 3
+assert
+
+allow:
+int 1
+return
+
+reject:
+int 0
+return

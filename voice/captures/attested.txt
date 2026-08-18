@@ -8,11 +8,14 @@ guard 768360225 · registry 769213326 · one atomic group, submitted to a node
 
   attested-payment          PASS  settled
         Genuine Primus attestation rides in the payment group
-        round 66429919 · EGRPYIO5FOM76WX3YXBAEC4IJJRATLK2KFWU4JQP3DSX3Z7RNCXQ
+        round 66430478 · TUMDWSG5GT6ODKZ3PM6ZL75YTQBX7PZMVE4PT7XKHFMXKU7GK43A
   forged-attestation        PASS  blocked
         Payee swapped in the attestation, signature untouched
         rejected by ApprovalProgram
+  attestation-omitted       PASS  settled
+        No registry call in the group at all — is it actually required?
+        round 66430480 · E7CJPVFQZDSZWQCKLDTMPVLYQOJCFQKMXZLG6M27GFY3VB4J4X6Q
 
 ──────────────────────────────────────────────────────────────────────────────
-merchant balance  0.679600 USDC  →  0.699600 USDC
-2/2 as expected — no valid attestation in the group, no payment
+merchant balance  0.779500 USDC  →  0.819500 USDC
+3/3 as expected

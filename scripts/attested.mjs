@@ -47,11 +47,13 @@ function attestationArgs(file) {
   };
 }
 
-/** [0] guard · [1] registry · [2..4] budget pads · [5] payment */
-async function build(file, amount, receiver) {
+/** [0] guard · [1] registry · [2..4] budget pads · [5] payment
+    withAttestation=false drops the registry call, to test whether anything
+    actually REQUIRES it to be there. */
+async function build(file, amount, receiver, withAttestation = true) {
   const { payTo, args } = attestationArgs(file);
   const sp = await algod.getTransactionParams().do();
-  const payIdx = 5;
+  const payIdx = withAttestation ? 5 : 4;
   const zero = { ...sp, fee: 0, flatFee: true };
 
   const idx = new Uint8Array(8);
@@ -62,11 +64,11 @@ async function build(file, amount, receiver) {
       sender: operator.addr, appIndex: GUARD, appArgs: [idx],
       suggestedParams: { ...sp, fee: MIN_FEE * 6, flatFee: true },
     }),
-    algosdk.makeApplicationNoOpTxnFromObject({          // [1] the attestation
+    ...(withAttestation ? [algosdk.makeApplicationNoOpTxnFromObject({   // [1] the attestation
       sender: operator.addr, appIndex: REGISTRY, appArgs: args,
       boxes: [{ appIndex: REGISTRY, name: utf8(payTo) }],
       suggestedParams: zero,
-    }),
+    })] : []),
     ...[0, 1, 2].map((i) =>                             // [2..4] opcode budget
       algosdk.makeApplicationNoOpTxnFromObject({
         sender: operator.addr, appIndex: PAD, appArgs: [utf8("budget"), new Uint8Array([i])],
@@ -88,11 +90,11 @@ const short = (m) => {
   return (hit ? hit[0] : s).slice(0, 130);
 };
 
-async function run(name, why, file, amount, receiver, expect) {
+async function run(name, why, file, amount, receiver, expect, withAttestation = true) {
   process.stdout.write(`  ${name.padEnd(26)}`);
   let outcome, detail;
   try {
-    const { txid } = await algod.sendRawTransaction(await build(file, amount, receiver)).do();
+    const { txid } = await algod.sendRawTransaction(await build(file, amount, receiver, withAttestation)).do();
     const r = await algosdk.waitForConfirmation(algod, txid, 5);
     outcome = "settled"; detail = `round ${r.confirmedRound ?? r["confirmed-round"]} · ${txid}`;
   } catch (e) { outcome = "blocked"; detail = short(e.message ?? e); }
@@ -116,8 +118,10 @@ ok.push(await run("attested-payment", "Genuine Primus attestation rides in the p
   "attestation.json", 20000, merchant, "settled"));
 ok.push(await run("forged-attestation", "Payee swapped in the attestation, signature untouched",
   "attestation-forged.json", 20000, merchant, "blocked"));
+ok.push(await run("attestation-omitted", "No registry call in the group at all — is it actually required?",
+  "attestation.json", 20000, merchant, "settled", false));
 const after = await usdcBalance(merchant);
 
 console.log("\n" + "─".repeat(78));
 console.log(`merchant balance  ${fmtUsdc(before)}  →  ${fmtUsdc(after)}`);
-console.log(`${ok.filter(Boolean).length}/${ok.length} as expected — no valid attestation in the group, no payment`);
+console.log(`${ok.filter(Boolean).length}/${ok.length} as expected`);

@@ -19,7 +19,8 @@
     "registry": "node scripts/registry.mjs",
     "attest": "node scripts/attest.mjs",
     "onchain": "node scripts/onchain.mjs",
-    "attested": "node scripts/attested.mjs"
+    "attested": "node scripts/attested.mjs",
+    "deploy-v3": "node scripts/deploy-v3.mjs"
   },
   "keywords": [],
   "author": "",

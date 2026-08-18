@@ -38,6 +38,12 @@ Reproduce: `npm run attested`
 |---|---|---|
 | Genuine attestation in the payment group | **settled** | round 66429905, `DJ5YHNRTD76PT46HKNU5LUJL7FULGW2SU2F33J6PCY5K5HEIEQ7A` |
 | Payee swapped, signature untouched | **blocked** | `rejected by ApprovalProgram` — the payment dies with it |
+| No registry call in the group at all | **settled** | round 66430324 — nothing in guard v1 requires it |
+
+The third row is the limit of the claim, stated by us rather than found by you:
+a **forged** attestation cannot be used, but an **absent** one is not yet
+refused. `contracts/policy3.teal` refuses without it; it compiles and is not
+deployed (PROOF.md explains why).
 
 The digest is reproducible from published fields, which is what makes on-chain
 verification possible at all:

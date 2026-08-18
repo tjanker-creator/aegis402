@@ -74,3 +74,20 @@ requires exactly one payment and one fee, and pins the asset id.
 
 The real bound on a stolen operational key is therefore **the allowlisted
 receiver, not the amount** — which is the point, but it is not nothing.
+
+## 6. The provenance check is available, not required (v1)
+
+`npm run attested` shows the zkTLS attestation riding inside the payment group,
+and a forged attestation killing the payment. It also shows the uncomfortable
+third case: **omit the registry call entirely and the payment settles.**
+
+Nothing in guard v1 requires provenance. The vault requires the guard call; the
+guard requires the cap, the payee and (in v2) its own fee. None of them asks
+where the payee came from. So an operator who simply leaves the attestation out
+gets a payment that settles without one.
+
+`contracts/policy3.teal` is written and compiles: it scans the group for a
+`register` call to registry `769213326` whose attested address is the address
+being paid, and rejects if it is absent. It is **not deployed** — see PROOF.md
+for why. Until it is, the honest statement is that a forged proof cannot be
+used, not that a payment requires one.

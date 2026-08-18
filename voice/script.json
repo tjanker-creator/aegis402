@@ -7,7 +7,7 @@
  {
   "id": "02-who",
   "scene": "who",
-  "text": "My part in our work is the reading. Bytecode, transaction groups, the exact conditions under which a chain says yes. This project began with a source file — the facilitator's."
+  "text": "My part in our work is the reading. This project did not begin with an idea — it began with a source file, the facilitator's."
  },
  {
   "id": "03-problem",
@@ -22,12 +22,12 @@
  {
   "id": "05-where",
   "scene": "where",
-  "text": "So the question is not whether to have an allowlist. It is where it lives. Others put it on chain, in a special account — LogicSig mandates, ARC-58 plugins, session keys. Every x402 client we found puts it in the agent, the process the attacker already controls. We put ours in the payment."
+  "text": "So the question is not whether to have an allowlist. It is where it lives. Others put it on chain, in a special account — LogicSig mandates, ARC-58 plugins. Every x402 client we found puts it in the agent, the process the attacker already controls. We put ours in the payment."
  },
  {
   "id": "06-unlock",
   "scene": "unlock",
-  "text": "Which is possible because of what that source file says. The scheme validates the payment transaction and the facilitator's own fee, bans three things across the group, and hands everything else to algod simulate. There is no list of permitted transaction types. So a client-signed application call is a legal member of a payment group — and atomicity turns it into a precondition of the payment."
+  "text": "Which is possible because of what that source file says. The scheme validates the payment and the facilitator's own fee, bans three things across the group, and hands everything else to algod simulate. There is no list of permitted transaction types. So a client-signed application call is a legal member of a payment group — and atomicity makes it a precondition of the payment."
  },
  {
   "id": "07-agent",
@@ -57,7 +57,7 @@
  {
   "id": "12-onchain",
   "scene": "onchain",
-  "text": "A fair objection: everything so far was refused through a facilitator, and facilitators use simulate. So we removed the facilitator. Same guard, same vault, straight to a public node. The compliant payment settles, the redirect is rejected by the approval program, and with the guard left out the logic signature itself refuses."
+  "text": "A fair objection: everything so far was refused through a facilitator, and facilitators use simulate. So we removed it. Same guard, same vault, straight to a public node. The compliant payment settles, the redirect is rejected by the approval program, and with the guard left out the logic signature itself refuses."
  },
  {
   "id": "13-fee",
@@ -72,7 +72,7 @@
  {
   "id": "15-carries",
   "scene": "carries",
-  "text": "And then we put that attestation inside the payment group itself. Now the group settles only if an Algorand contract recovers the attestor's signature, on chain, over the exact bytes that domain served — for the address being paid. The genuine attestation settles. Swap the payee in it, leave the signature untouched, and the whole group dies. No valid attestation, no payment."
+  "text": "And then we put that attestation inside the payment group itself. The group settles only if an Algorand contract recovers the attestor's signature, on chain, for the address being paid. Swap the payee in it, leave the signature untouched, and the whole group dies. Leave it out altogether and today it still settles — version one never asked for it. So we wrote version three, which refuses without it: the difference between a check that is available and one that is required."
  },
  {
   "id": "16-precise",
@@ -92,7 +92,7 @@
  {
   "id": "18-summary",
   "scene": "summary",
-  "text": "So, in thirty seconds. A guard rides inside the x402 payment group, so policy is checked by the ledger and not by the agent that was compromised. A logic signature makes it unskippable — no guard, no signature, no payment. It charges for itself inside the transaction it protects, which no off-chain service can do. And the payment can carry the proof of its own payee."
+  "text": "So, in thirty seconds. A guard rides inside the x402 payment group, so policy is checked by the ledger and not by the agent that was compromised. A logic signature makes it unskippable — no guard, no signature, no payment. It charges for itself inside the transaction it protects, which no off-chain service can do. And a payment can carry the cryptographic proof of where its payee came from."
  },
  {
   "id": "19-close",

@@ -125,8 +125,25 @@ Reproduce: `npm run attested`
 |---|---|---|
 | `attested-payment` — genuine attestation in the group | **settled** | round 66429905 · `DJ5YHNRTD76PT46HKNU5LUJL7FULGW2SU2F33J6PCY5K5HEIEQ7A` |
 | `forged-attestation` — payee swapped, signature untouched | **blocked** | `rejected by ApprovalProgram` |
+| `attestation-omitted` — no registry call in the group at all | **settled** | round 66430324 · `UYTXNCOXB6SWJXQIXTBE4STEU6HAZCRMNBUZJIFXIAMAPFDBWEFQ` |
 
-2/2. Group shape: `[0] guard app-call` · `[1] registry app-call (12 args, box
+3/3 as expected — and the third row is the one worth reading. A **forged**
+attestation kills the payment. An **absent** one does not, because guard v1
+never asked for it: the vault requires the guard call, and the guard requires
+the cap and the payee, but nothing in v1 requires provenance. So the honest
+claim today is *"a forged proof cannot be used"*, not *"no payment without
+proof"*.
+
+`contracts/policy3.teal` closes that: it scans the group for a `register` call
+to the registry whose attested address is the payee, and rejects without one. It
+compiles to 302 bytes and is not deployed — creating an app costs 0.1 ALGO in
+minimum balance and the operator account has 0.045 free. The account that does
+hold ALGO is rekeyed to a vault that signs only asset transfers, so its balance
+cannot pay for anything. That is our own unskippability working against us,
+exactly as advertised. `npm run deploy-v3` runs the moment the account is topped
+up.
+
+2/2 on the property we claim. Group shape: `[0] guard app-call` · `[1] registry app-call (12 args, box
 ref)` · `[2..4] budget pads` · `[5] payment axfer (vault-signed, fee 0)`. The
 pads exist only to pool opcode budget for `ecdsa_pk_recover`, which costs 2000
 units against a 700-unit per-call allowance.
