@@ -5,16 +5,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AEGIS402 — the fix has to live where the attacker can't reach it</title>
 <style>
+  /* THE ON-CHAIN ANALYST'S PATH — token set, lifted from assets/pulse-theme.css
+     so this film and the platform read as one system. Dark only, by design. */
   :root{
-    --ground:#0B0F15; --raised:#131922; --ink:#ECEFF4; --soft:#A6B0BF; --faint:#6A7583;
-    --rule:#212936; --guard:#E8A33D; --ok:#4ADE80; --stop:#F87171;
-    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
-    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --bg:#0A0A12; --bg-2:#14141F; --bg-3:#1C1C2B;
+    --surface:rgba(255,255,255,.035); --surface-2:rgba(255,255,255,.06);
+    --stroke:rgba(255,255,255,.09); --stroke-2:rgba(255,255,255,.17);
+    --text:#ECECF4; --text-2:#9A9AB0; --text-3:#6A6A82;
+
+    --pink:#FF1FB4; --magenta:#E619E6; --purple:#8B2FE6;
+    --royal:#3D5BFF; --blue:#1E9BFF; --cyan:#00E0FF; --green:#00FF85;
+    --up:#00FF55; --down:#FF4D4D;
+    --pulse:linear-gradient(120deg,#FF1FB4 0%,#E619E6 22%,#8B2FE6 40%,#3D5BFF 58%,#1E9BFF 72%,#00E0FF 86%,#00FF85 100%);
+
+    --radius:16px; --radius-sm:11px;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif;
+    --display:'Space Grotesk','Inter',-apple-system,sans-serif;
+
+    /* aliases so the existing rules below keep working */
+    --ground:var(--bg); --raised:var(--bg-2); --ink:var(--text);
+    --soft:var(--text-2); --faint:var(--text-3); --rule:var(--stroke);
+    --guard:var(--cyan); --ok:var(--up); --stop:var(--down);
   }
   *{box-sizing:border-box}
   html,body{height:100%}
-  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);
-       display:flex;align-items:center;justify-content:center;overflow:hidden}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);
+       display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+  /* the holographic ground and the survey grid, straight from the platform */
+  body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:radial-gradient(640px 540px at 8% -6%,rgba(255,31,180,.16),transparent 60%),
+               radial-gradient(700px 620px at 100% 4%,rgba(0,224,255,.13),transparent 60%),
+               radial-gradient(760px 720px at 60% 112%,rgba(139,47,230,.16),transparent 62%)}
+  body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;
+    background-image:linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
+    background-size:66px 66px;
+    -webkit-mask-image:radial-gradient(circle at 50% 22%,#000,transparent 82%);
+    mask-image:radial-gradient(circle at 50% 22%,#000,transparent 82%)}
+  .stage{z-index:1}
   .stage{width:min(1120px,94vw);height:min(640px,78vh);position:relative}
 
   /* ---- persistent chrome: the screen is never empty ---- */
@@ -184,6 +213,48 @@
          background:var(--ground);z-index:5;flex-direction:column;gap:.9rem;cursor:pointer}
   .start b{font-size:1.15rem;font-weight:600;letter-spacing:.02em}
   .start small{color:var(--faint);font-family:var(--mono);font-size:.75rem;letter-spacing:.1em}
+
+  /* ---- Analyst Path component language ---------------------------------- */
+  h1,h2{font-family:var(--display);letter-spacing:-.015em}
+  .eyebrow{font-family:var(--mono);font-size:.68rem;letter-spacing:.18em;color:var(--cyan);
+           display:inline-block;border:1px solid rgba(0,224,255,.32);background:rgba(0,224,255,.06);
+           padding:4px 11px;border-radius:999px;width:fit-content}
+  .term,.group,.scan,.card,.codewrap,.diff,.col{border-radius:var(--radius);border-color:var(--stroke);
+           background:var(--bg-2);box-shadow:0 24px 70px -30px rgba(0,0,0,.8)}
+  .term{background:linear-gradient(180deg,var(--bg-2),var(--bg-3))}
+  .term .pass{color:var(--up)} .term .fail{color:var(--down)}
+  .cite{border-left:2px solid transparent;border-image:var(--pulse) 1;border-image-slice:1}
+  .flow span,.vault .b,.slots .sl{border-radius:var(--radius-sm)}
+  .flow span.lit.g,.vault .b.g{border-color:rgba(0,224,255,.45);color:var(--cyan);
+           box-shadow:0 0 18px -4px rgba(0,224,255,.4)}
+  .group .r.g{background:linear-gradient(90deg,rgba(0,224,255,.10),transparent 70%)}
+  .group .r.g .w{color:var(--cyan)}
+  .scan .s.look{background:linear-gradient(90deg,rgba(139,47,230,.16),transparent 70%)}
+  .scan .s.hit{background:linear-gradient(90deg,rgba(0,255,85,.13),transparent 70%);color:var(--up)}
+  .cards .c.lit{border-color:rgba(0,224,255,.45);box-shadow:0 0 26px -8px rgba(0,224,255,.45)}
+  .slots .sl.on{border-color:rgba(0,224,255,.5);color:var(--cyan);background:rgba(0,224,255,.09);
+           box-shadow:0 0 16px -6px rgba(0,224,255,.5)}
+  .stamp{border-color:var(--down);color:var(--down);border-radius:var(--radius-sm);
+           box-shadow:0 0 34px -8px rgba(255,77,77,.55)}
+  td.s{color:var(--up)}
+  .bar{height:3px}
+  .bar i{background:var(--pulse);box-shadow:0 0 16px rgba(0,224,255,.55)}
+  .bar .tick{height:3px;background:var(--bg)}
+  .top b{background:var(--pulse);-webkit-background-clip:text;background-clip:text;
+           -webkit-text-fill-color:transparent;letter-spacing:.22em}
+  .caret{background:var(--cyan);box-shadow:0 0 10px rgba(0,224,255,.8)}
+  .start{background:var(--bg)}
+  .start b{font-family:var(--display);background:var(--pulse);-webkit-background-clip:text;
+           background-clip:text;-webkit-text-fill-color:transparent;font-size:1.5rem;letter-spacing:.18em}
+
+  /* the group's death has to be readable: dim what it kills, then stamp it */
+  .group .r{transition:opacity .45s,filter .45s}
+  .group.dead .r{opacity:.14;filter:blur(1px)}
+  .group .kill{background:rgba(255,77,77,.07);border-color:rgba(255,77,77,.55);border-radius:var(--radius)}
+  .group .killtxt{font-family:var(--mono);font-weight:600;letter-spacing:.24em;
+    color:var(--down);text-shadow:0 0 26px rgba(255,77,77,.7);
+    background:radial-gradient(60% 120% at 50% 50%,rgba(10,10,18,.94),rgba(10,10,18,.55) 70%,transparent);
+    font-size:clamp(.85rem,1.6vw,1.15rem)}
 </style>
 </head>
 <body>
