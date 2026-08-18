@@ -28,7 +28,7 @@ for s in segs:
         "audio": base64.b64encode(p.read_bytes()).decode(),
     })
 
-captures = {"agent": cap("agent"), "fee": cap("fee"), "onchain": cap("onchain"), "attested": cap("attested"), "multiply": cap("multiply")}
+captures = {"agent": cap("agent"), "fee": cap("fee"), "onchain": cap("onchain"), "attested": cap("attested"), "multiply": cap("multiply"), "attested3": cap("attested3")}
 
 # real vault LogicSig source, comments stripped of the box-drawing noise
 teal = (here.parent / "contracts" / "vault.teal.tmpl").read_text().splitlines()

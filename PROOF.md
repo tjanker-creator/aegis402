@@ -189,3 +189,34 @@ The general version belongs in the scheme, not in one project's guard — see
 [SPEC-NOTE.md](SPEC-NOTE.md).
 
 **Running total: 23 scenarios, 6 settle, 17 refuse — and one of the six is this one.**
+
+---
+
+## Guard v3: the provenance proof is required, not merely available
+
+Recorded 2026-08-18, after the battery above showed an **absent** attestation
+settling. Guard v3 (app `769462393`) closes it: it pins the asset, bounds the
+group to exactly one transfer, and scans the group for a `register` call to
+registry `769213326` whose attested address is the address being paid. Without
+one, it rejects.
+
+The account it protects is `3HD7EYSY5RHYAMA4B3OEBUAVO474NKFLF4QKGEICLQ7WTIXY2OWXDA37CA`,
+rekeyed to vault `546JBIRD763MG7N4OXGFCRBCSPIUV73KSZH7UEPKZSF4LUKPGMOLZEEDVA` —
+recompile `vault.teal.tmpl` with `GUARD_APP_ID = 769462393` and you get that
+address, which is the whole no-second-key argument.
+
+Reproduce: `npm run attested3`
+
+| Scenario | Result | Chain response |
+|---|---|---|
+| `attested-payment` — genuine attestation in the group | **settled** | round 66431495 · `HMV3TACI2NPZTXRGYQLU42DWVZ43GNLI5S2STIVQKHIS6SBNA3EA` |
+| `forged-attestation` — payee swapped, signature untouched | **blocked** | `assert failed pc=297` (app 769462393) |
+| `attestation-omitted` — no registry call at all | **blocked** | `assert failed pc=297` — **v1 settled this; v3 does not** |
+| `redirect-to-attacker` — valid proof, money sent elsewhere | **blocked** | `rejected by ApprovalProgram` |
+| `over-the-cap` — valid proof, ten times the cap | **blocked** | `rejected by ApprovalProgram` |
+
+5/5. The third row is the point of the whole exercise: it is the same scenario
+that settles under v1, recorded in both states rather than quietly replaced.
+
+**Running total: 28 scenarios, 7 settle, 21 refuse. Two of the seven are
+findings rather than passes, and both of those are ours.**

@@ -53,7 +53,9 @@ npm run attack     # 8 scenarios against the live hosted facilitator
 npm run fee        # 6 scenarios: the guard's fee as a settlement precondition
 npm run onchain    # 4 scenarios submitted DIRECTLY to a node, no facilitator
 npm run registry   # the attested addresses recorded on chain
-npm run attested   # 2 scenarios: the attestation rides INSIDE the payment group
+npm run attested   # 3 scenarios: the attestation rides INSIDE the payment group (v1)
+npm run attested3  # 5 scenarios: guard v3 — no provenance proof, no payment
+npm run multiply   # 2 scenarios: one invoice, seven payments, the facilitator settled it
 npm run demo       # the story, paced for watching
 ```
 

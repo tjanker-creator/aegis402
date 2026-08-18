@@ -72,7 +72,7 @@
  {
   "id": "15-carries",
   "scene": "carries",
-  "text": "And then we put that attestation inside the payment group itself. The group settles only if an Algorand contract recovers the attestor's signature, on chain, for the address being paid. Swap the payee in it, leave the signature untouched, and the whole group dies. Leave it out altogether and today it still settles — version one never asked for it. So we wrote version three, which refuses without it: the difference between a check that is available and one that is required."
+  "text": "And then we made that proof mandatory. Guard three refuses to approve a payment unless the registry call is in the same group, naming the address being paid. Forge the attestation: rejected. Leave it out entirely: rejected. Attach a valid proof and send the money elsewhere: rejected. A payment that cannot show where its payee came from does not settle."
  },
  {
   "id": "16-precise",
@@ -82,7 +82,7 @@
  {
   "id": "16-proof",
   "scene": "proof",
-  "text": "Twenty-three scenarios now — against the live facilitator, and against a bare node. Seventeen refuse. Five settle as designed, and one settles that should not have. You need not trust any of it: the account's spending authority is public."
+  "text": "Twenty-eight scenarios now — against the live facilitator, and against a bare node. Twenty-one refuse. Of the seven that settle, two are findings rather than passes, and both of those are ours. You need not trust any of it: the account's spending authority is public."
  },
  {
   "id": "17-correction",

@@ -38,12 +38,14 @@ Reproduce: `npm run attested`
 |---|---|---|
 | Genuine attestation in the payment group | **settled** | round 66429905, `DJ5YHNRTD76PT46HKNU5LUJL7FULGW2SU2F33J6PCY5K5HEIEQ7A` |
 | Payee swapped, signature untouched | **blocked** | `rejected by ApprovalProgram` — the payment dies with it |
-| No registry call in the group at all | **settled** | round 66430324 — nothing in guard v1 requires it |
+| No registry call in the group at all | **settled under v1** | round 66430324 — nothing in guard v1 required it |
+| No registry call in the group at all | **blocked under v3** | `assert failed pc=297`, app `769462393` |
 
-The third row is the limit of the claim, stated by us rather than found by you:
-a **forged** attestation cannot be used, but an **absent** one is not yet
-refused. `contracts/policy3.teal` refuses without it; it compiles and is not
-deployed (PROOF.md explains why).
+We recorded that gap before we closed it, and we left both rows standing. Under
+guard v1 a **forged** proof could not be used but an **absent** one was not
+refused. Guard v3 (app `769462393`, `npm run attested3`, 5/5) requires the
+registry call in the group and names the payee in it. It still does not read the
+registry box, and it does not need to: the proof rides in the payment.
 
 The digest is reproducible from published fields, which is what makes on-chain
 verification possible at all:

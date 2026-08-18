@@ -336,13 +336,14 @@
       <div class="was rv">not: “this address belongs to the merchant you meant”</div>
       <div class="now rv">it proves the <b>domain</b> published the address. Naming is a separate layer, and we do not claim it.</div>
     </div>
-    <p class="rv" style="color:var(--faint);font-size:.9rem">The guard's own allowlist is still a compiled-in
-      constant — it does not read the registry box. It does not have to: the proof rides in the group.</p>
+    <p class="rv" style="color:var(--faint);font-size:.9rem">Guard v3 (app <b>769462393</b>) requires the
+      registry call in the group and names the payee in it. It still does not read the registry box — it does
+      not have to: the proof rides in the payment.</p>
   </div>
 
   <!-- 17 -->
   <div class="scene" data-scene="proof">
-    <p class="eyebrow rv">Live TestNet · twenty-three scenarios · seventeen refuse</p>
+    <p class="eyebrow rv">Live TestNet · twenty-eight scenarios · twenty-one refuse</p>
     <table id="tbl">
       <tr><th>Attack</th><th>Result</th><th>Refused by</th></tr>
       <tr><td>Pay ten times the cap</td><td class="s">blocked</td><td>guard</td></tr>
@@ -358,6 +359,7 @@
       <tr><td>Two payments in one group, each within cap</td><td class="s">blocked</td><td>guard</td></tr>
       <tr><td>Forged attestation</td><td class="s">blocked</td><td>registry</td></tr>
       <tr><td>Seven payments in one group, each within cap</td><td class="s" style="color:var(--stop)">settled</td><td><span style="color:var(--stop)">nothing — the scheme bounds a payment, not a group</span></td></tr>
+      <tr><td><b>No provenance proof in the group</b> — guard v3</td><td class="s">blocked</td><td>guard <span style="color:var(--guard)">· proof is required</span></td></tr>
       <tr><td>Forged attestation <b>inside the payment group</b></td><td class="s">blocked</td><td>registry <span style="color:var(--guard)">· payment dies with it</span></td></tr>
       <tr><td>Redirect — submitted straight to a node</td><td class="s">blocked</td><td>guard <span style="color:var(--guard)">· no facilitator</span></td></tr>
       <tr><td>Over the cap — submitted straight to a node</td><td class="s">blocked</td><td>guard <span style="color:var(--guard)">· no facilitator</span></td></tr>
@@ -479,7 +481,7 @@ const SCENES={
                s.forEach((x,i)=>{ later(()=>x.classList.add("look"), d*1000*(0.34+i*0.12));
                  later(()=>{x.classList.remove("look"); if(i===1)x.classList.add("hit");}, d*1000*(0.34+i*0.12+0.10)); }); },
   onchain:d=>typeInto($("#t-onchain"), CAPS.onchain, d*1000*0.90),
-  carries:d=>typeInto($("#t-carries"), CAPS.attested, d*1000*0.90),
+  carries:d=>typeInto($("#t-carries"), CAPS.attested3, d*1000*0.90),
   fee:    d=>typeInto($("#t-fee"),     CAPS.fee,     d*1000*0.90),
   attest: d=>{ const kids=[...$("#flow").children]; kids.forEach(k=>k.classList.remove("lit"));
                kids.forEach((k,i)=>later(()=>k.classList.add("lit"), d*1000*(0.12+i*0.08))); },

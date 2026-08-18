@@ -21,7 +21,8 @@
     "onchain": "node scripts/onchain.mjs",
     "attested": "node scripts/attested.mjs",
     "deploy-v3": "node scripts/deploy-v3.mjs",
-    "multiply": "node scripts/multiply.mjs"
+    "multiply": "node scripts/multiply.mjs",
+    "attested3": "node scripts/attested3.mjs"
   },
   "keywords": [],
   "author": "",

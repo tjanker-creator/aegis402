@@ -86,8 +86,13 @@ guard requires the cap, the payee and (in v2) its own fee. None of them asks
 where the payee came from. So an operator who simply leaves the attestation out
 gets a payment that settles without one.
 
-`contracts/policy3.teal` is written and compiles: it scans the group for a
-`register` call to registry `769213326` whose attested address is the address
-being paid, and rejects if it is absent. It is **not deployed** — see PROOF.md
-for why. Until it is, the honest statement is that a forged proof cannot be
-used, not that a payment requires one.
+**Resolved in v3.** `contracts/policy3.teal` is deployed as app `769462393`: it
+scans the group for a `register` call to registry `769213326` whose attested
+address is the address being paid, and rejects if it is absent. `npm run
+attested3` records the same scenario blocked, at `assert failed pc=297`.
+
+v1 remains immutable and remains as described above, so both states are recorded
+rather than one quietly replacing the other. The account protected by v3 is a
+different account: the v1 payer is rekeyed to a vault that forbids `RekeyTo`, so
+it can never be moved to a newer guard. That is the unskippability working
+against us, and it is why v3 needed a fresh account rather than an upgrade.

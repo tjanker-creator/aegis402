@@ -1,0 +1,27 @@
+AEGIS402 guard v3 — a payment that cannot show where its payee came from does not settle
+guard 769462393 · registry 769213326 · vault 546JBIRD763MG7N4OXGFCRBCSPIUV73KSZH7UEPKZSF4LUKPGMOLZEEDVA
+
+  attested address  GABQRET4USJ5PJM2EUV7PV6L64O7AP3E2XLS3HMUXFIMPMQLDFTFAMDWOM
+  witnessed at      https://raw.githubusercontent.com/tjanker-creator/aegis402/main/.well-known/x402-payto.txt
+  guard allowlist   GABQRET4USJ5PJM2EUV7PV6L64O7AP3E2XLS3HMUXFIMPMQLDFTFAMDWOM
+  the address being paid IS the attested address
+
+  attested-payment          PASS  settled
+        Genuine Primus attestation rides in the payment group
+        round 66431508 · EYYWAFF77NRVQKTDSID5TTTD2UJQPRFZRCCDEF76NQ5NTGWSMDOQ
+  forged-attestation        PASS  blocked
+        Payee swapped in the attestation, signature untouched
+        logic eval error: assert failed pc=297. Details: app=769462393
+  attestation-omitted       PASS  blocked
+        No registry call in the group — v1 settled this, v3 must not
+        logic eval error: assert failed pc=297. Details: app=769462393
+  redirect-to-attacker      PASS  blocked
+        Attested proof present, but the money sent elsewhere
+        rejected by ApprovalProgram
+  over-the-cap              PASS  blocked
+        Attested proof present, ten times the cap
+        rejected by ApprovalProgram
+
+──────────────────────────────────────────────────────────────────────────────
+merchant balance  1.839500 USDC  →  1.859500 USDC
+5/5 as expected — no proof of provenance, no payment
